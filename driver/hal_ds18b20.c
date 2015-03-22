@@ -147,7 +147,6 @@ void halTemp(uint8 *t)
   _skip();
   _sp();
   temp = _tempRead(); // 读取16位温度数据
-  sign = 0;
   
   // 判断符合位，使用补码方式表示的
   if(temp>63488)
