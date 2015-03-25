@@ -208,7 +208,7 @@ void halOledShowStr6x8(uint8 *chr)
   }
 }
 
-// 从指定位置开始显示6×8像素的字符串
+// 从指定位置开始显示6x8像素的字符串
 void halOledShowStr6x8Ex(uint8 x, uint8 y, uint8 *chr)
 {
   _setPos(x, y);
