@@ -32,6 +32,7 @@ void halUartWrite(const uint8* buf)
   }
 }
 
+// 串口接收（没用到）
 void halUartRead(uint8* buf)
 {}
 
