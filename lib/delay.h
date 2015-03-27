@@ -3,18 +3,9 @@
 
 #include "hal_types.h"
 
-uint16 nms = 0;
-
 #define INIT_TIMER_A(n) CCR0=(n);TACTL|=TASSEL_2+ID_3;nms=0;CCTL0|=CCIE
 #define START_TIMER_A TACTL |= MC_1
 #define STOP_TIMER_A TACTL &= ~MC_1; TACTL &= ~TAIE; TACTL &= ~BIT0
-
-
-#pragma vertor=TIMERA0_VECTOR
-__interrupt void IntimerA(void)
-{
-  nms = (nms + 1) % 60000;
-}
 
 void _delayus(uint16 n);//ÑÓÊ±º¯Êý£¬n us
 
