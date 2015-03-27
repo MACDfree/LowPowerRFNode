@@ -20,9 +20,18 @@
 #define ADDR_CJ2 12 // 采集节点2地址
 #define ADDR_CJ3 13 // 采集节点3地址
 #define ADDR_CJ4 14 // 采集节点4地址
+#define ADDR_CJ 11 // 采集节点地址
 #define ADDR_B 0 // 广播地址为0
 #define KEY_H 111 // 密钥高8位
 #define KEY_L 111 // 密钥低8位
+
+#ifdef MODE_HJ
+#define LEN 7
+#endif
+
+#ifdef MODE_CJ
+#define LEN 4
+#endif
 
 
 #ifdef MODE_UART
@@ -36,7 +45,13 @@
 uint8 status = 0; // 记录节点工作状态
 uint8 isSent = 0;
 uint8 isReceived = 0;
+uint16 nms = 0;
 
+#ifdef MODE_CJ
+uint8 len = 0; // 中断中使用以记录数据包长度
+uint8 stat = 0; // 中断中使用以记录数据状态
+uint8 pak[5] = {0}; // 中断中使用以接收唤醒数据包
+#endif
 
 #ifdef MODE_TEST
 
@@ -108,6 +123,33 @@ void ioInit(void)
   P1IFG = 0;
 }
 
+#ifdef MODE_CJ
+// 进入WOR模式
+void enterWor(void)
+{
+  halRfStrobe(CC1101_SIDLE);
+  halRfWriteReg(CC1101_MCSM2, 0x04);// 占空比0.781%
+  
+  /* tevent0 1.125s
+   * tevent0=750/(26*10^6)*event0*2^(5*WOR_RES)
+   *             晶振频率
+   * event0=39000(0x9858) */
+  halRfWriteReg(CC1101_WOREVT1, 0x98);
+  halRfWriteReg(CC1101_WOREVT0, 0x58);
+  
+  halRfWriteReg(CC1101_WORCTRL, 0x38); // EVENT1=3,RC_CAL=1,WOR_RES=0
+  
+  halRfStrobe(CC1101_SWORRST);
+  halRfStrobe(CC1101_SWOR);
+}
+#endif
+
+#pragma vertor=TIMERA0_VECTOR
+__interrupt void IntimerA(void)
+{
+  nms = (nms + 1) % 60000;
+}
+
 // 中断处理函数
 #pragma vector=PORT1_VECTOR
 __interrupt void ei(void)
@@ -132,6 +174,48 @@ __interrupt void ei(void)
     {
       isReceived = 1;
     }
+#endif
+    
+#ifdef MODE_CJ
+    if(status==2)
+    {
+      stat = halRfReadFifo(&len, 1);
+      if((stat & CC1101_STATUS_STATE_BM) == CC1101_STATE_RX_OVERFLOW)
+      {
+        halRfStrobe(CC1101_SIDLE);
+        halRfStrobe(CC1101_SFRX);
+        enterWor();
+      }
+      else if(len!=3)
+      {
+        halRfStrobe(CC1101_SIDLE);
+        halRfStrobe(CC1101_SFRX);
+        enterWor();
+      }
+      else
+      {
+        halRfReadFifo(pak, len+2);
+        if((pak[len+1] & CC1101_LQI_CRC_OK_BM) != CC1101_LQI_CRC_OK_BM)
+        {
+          halRfStrobe(CC1101_SIDLE);
+          halRfStrobe(CC1101_SFRX);
+          enterWor();
+        }
+        else if(pak[1]!=KEY_L || pak[2]!=KEY_H)
+        {
+          halRfStrobe(CC1101_SIDLE);
+          halRfStrobe(CC1101_SFRX);
+          enterWor();
+        }
+        else
+        {
+          halRfStrobe(CC1101_SIDLE);
+          halRfStrobe(CC1101_SFRX);
+          LPM3_EXIT;
+        }
+      }
+    }
+    else if(status==3)
 #endif
     _EINT();
   }
@@ -184,25 +268,7 @@ void sendPacket(uint8 *data, uint8 length)
   halRfStrobe(CC1101_SFTX);
 }
 
-// 进入WOR模式
-void enterWor(void)
-{
-  halRfStrobe(CC1101_SIDLE);
-  halRfWriteReg(CC1101_MCSM2, 0x04);// 占空比0.781%
-  
-  /* tevent0 1.125s
-   * tevent0=750/(26*10^6)*event0*2^(5*WOR_RES)
-   *             晶振频率
-   * event0=39000(0x9858) */
-  halRfWriteReg(CC1101_WOREVT1, 0x98);
-  halRfWriteReg(CC1101_WOREVT0, 0x58);
-  
-  halRfWriteReg(CC1101_WORCTRL, 0x38); // EVENT1=3,RC_CAL=1,WOR_RES=0
-  
-  halRfStrobe(CC1101_SWORRST);
-  halRfStrobe(CC1101_SWOR);
-}
-
+#ifdef MODE_HJ
 // 唤醒采集节点函数
 void wakeUp(void)
 {
@@ -217,6 +283,7 @@ void wakeUp(void)
     sendPacket(pak, 4);
   }
 }
+#endif
 
 // 接收数据包
 uint8 receivePacket(uint8 *data, uint8 *length)
@@ -226,19 +293,18 @@ uint8 receivePacket(uint8 *data, uint8 *length)
   halRfStrobe(CC1101_SRX);
   while(isReceived==0);
   rc = halRfReadFifo(length, 1);
-  
-#ifdef MODE_HJ
+
   if((rc & CC1101_STATUS_STATE_BM) == CC1101_STATE_RX_OVERFLOW)
   {
     halRfStrobe(CC1101_SIDLE);
     halRfStrobe(CC1101_SFRX);
     rc = 1;
   }
-  else if(*length!=7)
+  else if(*length!=LEN)
   {
     halRfStrobe(CC1101_SIDLE);
     halRfStrobe(CC1101_SFRX);
-    rc = 2
+    rc = 2;
   }
   else
   {
@@ -251,27 +317,6 @@ uint8 receivePacket(uint8 *data, uint8 *length)
     else if(data[2]!=KEY_L || data[3]!=KEY_H)
     {
       rc = 4;
-    }
-    else
-    {
-      rc = 0;
-    }
-  }
-  halRfStrobe(CC1101_SFRX);
-  return rc;
-#endif
-  else if(*length == 0 || *length > 8)
-  {
-    halRfStrobe(CC1101_SIDLE);
-    halRfStrobe(CC1101_SFRX);
-    rc = 2;
-  }
-  else
-  {
-    halRfReadFifo(data, *length + 2);
-    if((data[*length+1] & CC1101_LQI_CRC_OK_BM) != CC1101_LQI_CRC_OK_BM)
-    {
-      rc = 3;
     }
     else
     {
@@ -297,17 +342,27 @@ void initClock(void)
 
 void main(void)
 {
-  
+  uint8 length;
 #ifdef MODE_HJ
-  //[0]包长 [1]目的地址 [2]源地址 [3-4]16位密钥 [5]符号位 [6]整数 [7]小数
-  uint8 pakTemp[9] = {0};
-  //[0]包长:4；[1]目的地址:11-14；[2]源地址:10；[3-4]16位密钥
+  // 此为接收数据包
+  // [0]目的地址 [1]源地址 [2-3]16位密钥 [4]符号位 [5]整数 [6]小数 [7]RSSI [8]LQI
+  uint8 pakTemp[4][9] = {0};
+  
+  // 此为发送数据包
+  // [0]包长:4；[1]目的地址:11-14；[2]源地址:10；[3-4]16位密钥
   uint8 pakAsk[5] = {4, 0, ADDR_HJ, KEY_L, KEY_H};
   uint8 i;
 #endif
   
-  uint16 i, count = 0;
-  uint8 id, ver, rc, cfg;
+#ifdef MODE_CJ
+  // 此为接收数据包
+  // [0]目的地址 [1]源地址 [2-3]16位密钥 [4]RSSI [5]LQI
+  uint8 pakAsk[6] = {0};
+  
+  // 此为发送数据包
+  // [0]包长:7；[1]目的地址:10；[2]源地址:11-14；[3-4]16位密钥；[5]符号位；[6]整数部分；[7]小数部分
+  uint8 pakTemp[8] = {7, ADDR_HJ, ADDR_CJ, KEY_L, KEY_H, 0, 0, 0};
+#endif
   
   WDTCTL = WDTPW + WDTHOLD;
   
@@ -332,53 +387,59 @@ void main(void)
   _EINT();
   
 #ifdef MODE_HJ
-  INIT_TIMER_A(1000);
-  wakeUp();
-  // 发送唤醒数据包，进入状态2
-  status = 2;
-  for(i=0; i<4; i++)
+  while(1)
   {
-    pakAsk[1] = ADDR_CJ1 + i;
-    sendPacket(pakAsk, 5);
-    // 发送节点i+1定向询问数据包，进入状态3
-    status++;
-    nms = 0;
-    START_TIMER_A;
-    while((receivePacket(pakTemp, 9)!=0) ||
-          (nms>100));
-    STOP_TIMER_A;
-    status++;
+    INIT_TIMER_A(1000);
+    wakeUp();
+    // 发送唤醒数据包，进入状态2
+    status = 2;
+    for(i=0; i<4; i++)
+    {
+      pakAsk[1] = ADDR_CJ1 + i;
+      sendPacket(pakAsk, 5);
+      // 发送节点i+1定向询问数据包，进入状态3
+      status++;
+      nms = 0;
+      START_TIMER_A;
+      while((receivePacket(pakTemp[i], &length)!=0) &&
+            (nms<100));
+      STOP_TIMER_A;
+      status++;
+    }
+    // 等待一段时间
+    status = 1;
   }
 #endif
   
 #ifdef MODE_CJ
-#endif
-  
-  
-  
-  //halOledShowStr6x8Ex(0, 0, "#");
   while(1)
-  {/*
-    //halTemp(temp + 5);
-    //sendPacket(temp, 8);
-    wakeUp();
-    if(count == 0)
+  {
+  loop:
+    enterWor();
+    status = 2;
+    LPM3;
+    INIT_TIMER_A(1000);
+    status = 3;
+    nms = 0;
+    START_TIMER_A;
+    while(1)
     {
-      halOledShowStr6x8Ex(0, 0, "#          ");
+      if(receivePacket(pakAsk, &length)==0)
+      {
+        STOP_TIMER_A;
+        break;
+      }
+      if(nms>500)
+      {
+        STOP_TIMER_A;
+        goto loop;
+      }
     }
-    else
-    {
-      halOledShowStr6x8Ex(count, 0, "#");
-    }
-    count = (count+6) % 60;
-    for(i=0; i<65535; i++);
-    for(i=0; i<65535; i++);
-    for(i=0; i<65535; i++);
-    for(i=0; i<65535; i++);
-    for(i=0; i<65535; i++);
-    //halRfStrobe(CC1101_SIDLE);
-    rc = halRfGetTxStatus();
-    itob(rc, test);
-    halOledShowStr6x8Ex(0, 4, test);*/
+    status = 4;
+    halTemp(pakTemp+5);
+    sendPacket(pakTemp, 8);
+    status = 5;
   }
+#endif
+
 }
