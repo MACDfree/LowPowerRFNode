@@ -10,9 +10,6 @@
 #define DQ_OUT P6DIR |= BIT3 //数据引脚设置为输出
 #define DQ_VAL (P6IN & BIT3) //获取数据引脚的值
 
-// 温度的符号位，整数部分，小数部分
-//uint8 sign, integer, decimal;
-
 //DS18B20初始化函数
 uint8 _init(void)
 {
@@ -23,16 +20,16 @@ uint8 _init(void)
   DQ0;
   _delayus(500);
   DQ1;
-  _delayus(55);
-  DQ_IN;
   _NOP();
-  if(DQ_VAL)
+  DQ_IN;
+  _delayus(55);
+  if(DQ_VAL) 
   {
-    errno = 1;
+    errno = 1; // ds18b20不存在
   }
   else
   {
-    errno = 0;
+    errno = 0; // ds18b20存在
   }
   DQ_OUT;
   DQ1;
@@ -92,61 +89,86 @@ uint8 _read(void)
   return temp;
 }
 
+#define _skip() _write(0xcc) // 宏定义版
+
 // Skip ROM（可以使用宏定义，减少函数调用 2015-03-20 10:48）
-void _skip(void)
-{
-  _write(0xcc);
-}
+//void _skip(void)
+//{
+//  _write(0xcc);
+//}
+
+#define _convert() _write(0x44) // 宏定义版
 
 // 发送温度转换指令（同上，可使用宏定义 2015-03-20 10:49）
-void _convert(void)
-{
-  _write(0x44);
-}
+//void _convert(void)
+//{
+//  _write(0x44);
+//}
+
+#define _sp() _write(0xbe) // 宏定义版
 
 // 发送读取温度指令
-void _sp(void)
-{
-  _write(0xbe);
-}
-
-// 读取温度，返回16位原始的温度数据
-uint16 _tempRead(void)
-{
-  uint8 temp_low;
-  uint16 temp;
-  
-  temp_low = _read();
-  temp = _read();
-  temp = (temp<<8) | temp_low;
-  
-  return temp;
-}
+//void _sp(void)
+//{
+//  _write(0xbe);
+//}
 
 // t为数组 元素个数为3 分别表示 符号 整数部分 小数部分
-void halTemp(uint8 *t)
+uint8 halTemp(uint8 *t)
 {
   uint8 i;
   uint16 temp;
   
-  do
+  // 使用定时器进行错误次数检测
+  INIT_TIMER_A(1000);
+  nms = 0;
+  START_TIMER_A;
+  while(_init()==1)
   {
-    i = _init();
-  }while(i); // 等待初始化完成（容易变成死循环，需要改成错误次数 2015-03-20 11:10）
+    if(nms>100)
+    {
+      STOP_TIMER_A;
+      return 1;
+    }
+  }
+  STOP_TIMER_A;
+//  do
+//  {
+//    i = _init();
+//  }while(i); // 等待初始化完成（容易变成死循环，需要改成错误次数 2015-03-20 11:10）
   _skip();
   _convert(); // 先转换一次，避免出现85的问题
-  for(i=0; i<20; i++)
+  
+  for(i=0; i<20; i++) // 转换间隔800ms以上
   {
     _delayus(60000);
   }
   
-  do
+  // 使用定时器进行错误次数检测
+  INIT_TIMER_A(1000);
+  nms = 0;
+  START_TIMER_A;
+  while(_init()==1)
   {
-    i = _init();
-  }while(i);
+    if(nms>100)
+    {
+      STOP_TIMER_A;
+      return 1;
+    }
+  }
+  STOP_TIMER_A;
+  
+//  do
+//  {
+//    i = _init();
+//  }while(i);
   _skip();
-  _sp();
-  temp = _tempRead(); // 读取16位温度数据
+  _sp(); // 发送读取温度指令
+  
+  // 读取16位温度数据
+  i = _read();
+  temp = _read();
+  temp = (temp<<8) | i;
   
   // 判断符合位，使用补码方式表示的
   if(temp>63488)
@@ -156,4 +178,5 @@ void halTemp(uint8 *t)
   }
   t[1] = (temp>>4) & 0xff; // 8位温度整数部分
   t[2] = temp & 0x0f; // 4位温度小数部分
+  return 0;
 }
