@@ -7,6 +7,8 @@
 #define START_TIMER_A TACTL |= MC_1
 #define STOP_TIMER_A TACTL &= ~MC_1; TACTL &= ~TAIE; TACTL &= ~BIT0
 
+extern uint16 nms;
+
 void _delayus(uint16 n);//ÑÓÊ±º¯Êý£¬n us
 
 #endif
