@@ -6,10 +6,11 @@
 #include "rf_setting.h"
 #include "hal_ds18b20.h"
 #include "delay.h"
+#include "hal_clock.h"
 
 // 定义条件编译标识
 //#define MODE_TEST // 测试模式
-//#define MODE_HJ // 汇集节点模式
+#define MODE_HJ // 汇集节点模式
 //#define MODE_CJ // 采集节点模式
 //#define MODE_OLED // 使用OLED
 //#define MODE_UART // 使用串口
@@ -45,7 +46,6 @@
 uint8 status = 0; // 记录节点工作状态
 uint8 isSent = 0;
 uint8 isReceived = 0;
-uint16 nms = 0;
 
 #ifdef MODE_CJ
 uint8 len = 0; // 中断中使用以记录数据包长度
@@ -144,13 +144,7 @@ void enterWor(void)
 }
 #endif
 
-#pragma vertor=TIMERA0_VECTOR
-__interrupt void IntimerA(void)
-{
-  nms = (nms + 1) % 60000;
-}
-
-// 中断处理函数
+// 外部中断处理函数
 #pragma vector=PORT1_VECTOR
 __interrupt void ei(void)
 {
@@ -327,19 +321,6 @@ uint8 receivePacket(uint8 *data, uint8 *length)
   return rc;
 }
 
-// 初始化时钟源
-void initClock(void)
-{
-  uint16 i;
-  BCSCTL1 &= ~XT2OFF; //打开XT2高频晶体振荡器
-  do
-  {
-    IFG1 &= ~OFIFG; //清除晶振失败标志
-    for(i = 0xFF; i > 0; i--); //等待8MHz晶体起振
-  } while(IFG1 & OFIFG); //晶振失效标志仍然存在
-  BCSCTL2 |= SELM_2 + SELS; //MCLK和SMCLK选择高频晶振
-}
-
 void main(void)
 {
   uint8 length;
@@ -410,7 +391,7 @@ void main(void)
     status = 1;
   }
 #endif
-  
+
 #ifdef MODE_CJ
   while(1)
   {
