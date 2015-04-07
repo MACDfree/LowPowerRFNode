@@ -72,22 +72,22 @@ void halRfBurstConfig(const uint8 *rfConfig, const uint8 *rfPaTable, uint8 rfPaT
 }
 
 // 获取射频模块ID
-uint8 halRfGetId(void)
-{
-  return (halRfReadStatusReg(CC1101_PARTNUM));
-}
+//uint8 halRfGetId(void)
+//{
+//  return (halRfReadStatusReg(CC1101_PARTNUM));
+//}
 
 // 获取射频模块版本号
-uint8 halRfGetVer(void)
-{
-  return (halRfReadStatusReg(CC1101_VERSION));
-}
+//uint8 halRfGetVer(void)
+//{
+//  return (halRfReadStatusReg(CC1101_VERSION));
+//}
 
 // 发送指令
-uint8 halRfStrobe(uint8 cmd)
-{
-  return (halSpiStrobe(cmd));
-}
+//uint8 halRfStrobe(uint8 cmd)
+//{
+//  return (halSpiStrobe(cmd));
+//}
 
 // 读射频模块状态寄存器（突发访问位为1）
 uint8 halRfReadStatusReg(uint8 addr)
@@ -126,13 +126,13 @@ uint8 halRfReadFifo(uint8 *data, uint8 length)
 }
 
 // 获取发送模式的状态
-uint8 halRfGetTxStatus(void)
-{
-  return (halSpiStrobe(CC1101_SNOP));
-}
+//uint8 halRfGetTxStatus(void)
+//{
+//  return (halSpiStrobe(CC1101_SNOP));
+//}
 
 // 获取接收模式的状态
-uint8 halRfGetRxStatus(void)
-{
-  return (halSpiStrobe(CC1101_SNOP | CC1101_READ_SINGLE));
-}
+//uint8 halRfGetRxStatus(void)
+//{
+//  return (halSpiStrobe(CC1101_SNOP | CC1101_READ_SINGLE));
+//}

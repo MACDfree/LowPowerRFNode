@@ -2,6 +2,7 @@
 #define hal_rf_h
 
 #include "hal_types.h"
+#include "hal_cc1101.h"
 
 // 声明表示CC1101寄存器的结构体
 typedef struct {
@@ -46,16 +47,29 @@ void  halRfConfig(const hal_rf_config *rfConfig, const uint8 *rfPaTable, uint8 r
 // 使用配置数组和功率表配置射频模块（按照固定的顺序）
 void  halRfBurstConfig(const uint8 *rfConfig, const uint8 *rfPaTable, uint8 rfPaTableLen);
 void  halRfReset(void); // 射频模块初始化
-uint8 halRfGetId(void); // 获取射频模块ID
-uint8 halRfGetVer(void); // 获取射频模块版本号
+
+//uint8 halRfGetId(void); // 获取射频模块ID
+#define halRfGetId() halRfReadStatusReg(CC1101_PARTNUM)
+
+//uint8 halRfGetVer(void); // 获取射频模块版本号
+#define halRfGetVer() halRfReadStatusReg(CC1101_VERSION)
+
 uint8 halRfReadStatusReg(uint8 addr); // 读射频模块状态寄存器（突发访问位为1）
 uint8 halRfReadReg(uint8 addr); // 读射频模块寄存器（突发访问位为0）
 
 uint8 halRfWriteReg(uint8 addr, uint8 data); // 向射频模块写寄存器
+
 uint8 halRfWriteFifo(uint8 *data, uint8 length); // 写FIFO寄存器
+
 uint8 halRfReadFifo(uint8 *data, uint8 length); // 读FIFO寄存器
-uint8 halRfStrobe(uint8 cmd); // 发送指令
-uint8 halRfGetTxStatus(void); // 获取发送模式的状态
-uint8 halRfGetRxStatus(void); // 获取接收模式的状态
+
+//uint8 halRfStrobe(uint8 cmd); // 发送指令
+#define halRfStrobe(cmd) halSpiStrobe((cmd))
+
+//uint8 halRfGetTxStatus(void); // 获取发送模式的状态
+#define halRfGetTxStatus() halSpiStrobe(CC1101_SNOP)
+
+//uint8 halRfGetRxStatus(void); // 获取接收模式的状态
+#define halRfGetRxStatus() halSpiStrobe(CC1101_SNOP | CC1101_READ_SINGLE)
 
 #endif
