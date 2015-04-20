@@ -10,8 +10,8 @@
 
 // 定义条件编译标识
 //#define MODE_TEST // 测试模式
-#define MODE_HJ // 汇集节点模式
-//#define MODE_CJ // 采集节点模式
+//#define MODE_HJ // 汇集节点模式
+#define MODE_CJ // 采集节点模式
 //#define MODE_OLED // 使用OLED
 //#define MODE_UART // 使用串口
 
@@ -44,8 +44,8 @@
 #endif
 
 uint8 status = 0; // 记录节点工作状态
-uint8 isSent = 0;
-uint8 isReceived = 0;
+uint8 isSent = 0; // 是否发送完成标志
+uint8 isReceived = 0; // 是否接收完成标志
 
 #ifdef MODE_CJ
 uint8 len = 0; // 中断中使用以记录数据包长度
@@ -148,10 +148,10 @@ void enterWor(void)
 #pragma vector=PORT1_VECTOR
 __interrupt void ei(void)
 {
-  if((P1IFG & BIT5) != 0)
+  if((P1IFG & BIT5) != 0) //判断是否是定义的引脚触发中断
   {
-    _DINT();
-    P1IFG &= ~BIT5;
+    _DINT(); // 关闭中断响应
+    P1IFG &= ~BIT5; // 清除中断标志位
 #ifdef MODE_HJ
     if(status==1 || 
        status==2 ||
@@ -169,18 +169,18 @@ __interrupt void ei(void)
       isReceived = 1;
     }
 #endif
-    
+
 #ifdef MODE_CJ
-    if(status==2)
+    if(status==2) // 处于状态2，当接收到唤醒包后进入状态3
     {
-      stat = halRfReadFifo(&len, 1);
+      stat = halRfReadFifo(&len, 1); // 读取接收数据包长度
       if((stat & CC1101_STATUS_STATE_BM) == CC1101_STATE_RX_OVERFLOW)
       {
         halRfStrobe(CC1101_SIDLE);
         halRfStrobe(CC1101_SFRX);
         enterWor();
       }
-      else if(len!=3)
+      else if(len!=3) // 根据包长判断是否是唤醒数据包，包长为3
       {
         halRfStrobe(CC1101_SIDLE);
         halRfStrobe(CC1101_SFRX);
@@ -188,66 +188,69 @@ __interrupt void ei(void)
       }
       else
       {
-        halRfReadFifo(pak, len+2);
-        if((pak[len+1] & CC1101_LQI_CRC_OK_BM) != CC1101_LQI_CRC_OK_BM)
+        halRfReadFifo(pak, len+2); // 读取唤醒数据包
+        if((pak[len+1] & CC1101_LQI_CRC_OK_BM) != CC1101_LQI_CRC_OK_BM) // CRC校验
         {
           halRfStrobe(CC1101_SIDLE);
           halRfStrobe(CC1101_SFRX);
           enterWor();
         }
-        else if(pak[1]!=KEY_L || pak[2]!=KEY_H)
+        else if(pak[1]!=KEY_L || pak[2]!=KEY_H) // 检验16位密钥
         {
           halRfStrobe(CC1101_SIDLE);
           halRfStrobe(CC1101_SFRX);
           enterWor();
         }
-        else
+        else // 所有检验通过
         {
           halRfStrobe(CC1101_SIDLE);
           halRfStrobe(CC1101_SFRX);
-          LPM3_EXIT;
+          LPM3_EXIT; // msp430退出低功耗模式
         }
       }
     }
     else if(status==3)
+    {
+      isReceived = 1;
+    }
 #endif
     _EINT();
   }
 
-#ifdef MODE_CJ
-  uint8 rc;
-  if((P1IFG & BIT5) != 0)
-  {
-    _DINT();
-    P1IFG &= ~BIT5;
-    rc = halRfReadFifo(&len, 1);
-    if((rc & CC1101_STATUS_STATE_BM) == CC1101_STATE_RX_OVERFLOW)
-    {
-      goto err;
-    }
-    else if(len == 0 || len > 8)
-    {
-      goto err;
-    }
-    else
-    {
-      halRfReadFifo(pak, len + 2);
-      if((pak[len+1] & CC1101_LQI_CRC_OK_BM) != CC1101_LQI_CRC_OK_BM)
-      {
-        goto err;
-      }
-      else
-      {
-        isSent = 1;
-      }
-    }
-  err:
-    halRfStrobe(CC1101_SIDLE);
-    halRfStrobe(CC1101_SFRX);
-    enterWor();
-    _EINT();
-  }
-#endif
+//#ifdef MODE_CJ
+//  uint8 rc;
+//  if((P1IFG & BIT5) != 0)
+//  {
+//    _DINT();
+//    P1IFG &= ~BIT5;
+//    rc = halRfReadFifo(&len, 1);
+//    if((rc & CC1101_STATUS_STATE_BM) == CC1101_STATE_RX_OVERFLOW)
+//    {
+//      goto err;
+//    }
+//    else if(len == 0 || len > 8)
+//    {
+//      goto err;
+//    }
+//    else
+//    {
+//      halRfReadFifo(pak, len + 2);
+//      if((pak[len+1] & CC1101_LQI_CRC_OK_BM) != CC1101_LQI_CRC_OK_BM)
+//      {
+//        goto err;
+//      }
+//      else
+//      {
+//        isSent = 1;
+//      }
+//    }
+//  err:
+//    halRfStrobe(CC1101_SIDLE);
+//    halRfStrobe(CC1101_SFRX);
+//    enterWor();
+//    _EINT();
+//  }
+//#endif
 
 }
 
@@ -292,13 +295,13 @@ uint8 receivePacket(uint8 *data, uint8 *length)
   {
     halRfStrobe(CC1101_SIDLE);
     halRfStrobe(CC1101_SFRX);
-    rc = 1;
+    rc = 1; // error 1
   }
   else if(*length!=LEN)
   {
     halRfStrobe(CC1101_SIDLE);
     halRfStrobe(CC1101_SFRX);
-    rc = 2;
+    rc = 2; // error 2
   }
   else
   {
@@ -306,15 +309,15 @@ uint8 receivePacket(uint8 *data, uint8 *length)
     if((data[*length+1] & CC1101_LQI_CRC_OK_BM) != 
        CC1101_LQI_CRC_OK_BM)
     {
-      rc = 3;
+      rc = 3; // error 3
     }
     else if(data[2]!=KEY_L || data[3]!=KEY_H)
     {
-      rc = 4;
+      rc = 4; // error 4
     }
     else
     {
-      rc = 0;
+      rc = 0; // ok
     }
   }
   halRfStrobe(CC1101_SFRX);
@@ -398,7 +401,7 @@ void main(void)
   loop:
     enterWor();
     status = 2;
-    LPM3;
+    LPM3; // msp430进入低功耗模式，程序将在这里停止，等待唤醒数据包
     INIT_TIMER_A(1000);
     status = 3;
     nms = 0;
