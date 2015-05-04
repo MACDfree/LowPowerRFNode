@@ -9,10 +9,15 @@
 #include "hal_clock.h"
 
 // 定义条件编译标识
-//#define MODE_TEST // 测试模式
+/*
+节点工作模式分为汇集节点（MODE_HJ）和采集节点（MODE_CJ）
+MODE_TEST为测试标志
+如果定义测试标志，则MODE_OLED或MODE_UART也需要定义（两者可同时定义）
+*/
+#define MODE_TEST // 测试模式
 //#define MODE_HJ // 汇集节点模式
 #define MODE_CJ // 采集节点模式
-//#define MODE_OLED // 使用OLED
+#define MODE_OLED // 使用OLED
 //#define MODE_UART // 使用串口
 
 // 定义节点基本信息
@@ -55,7 +60,7 @@ uint8 pak[5] = {0}; // 中断中使用以接收唤醒数据包
 
 #ifdef MODE_TEST
 
-uint8 test[9];
+uint8 test[9]; // 存放调试输出信息
 //2进制 out: 9
 void itob(uint8 t, uint8 *out)
 {
@@ -370,11 +375,26 @@ void main(void)
   status = 1;
   _EINT();
   
+#ifdef MODE_OLED
+  halOledShowStr6x8Ex(0, 0, "Init finish");
+#endif
+  
+#ifdef MODE_UART
+  halUartWrite("Init finish\n");
+#endif
+  
 #ifdef MODE_HJ
   while(1)
   {
     INIT_TIMER_A(1000);
     wakeUp();
+#ifdef MODE_OLED
+    halOledShowStr6x8Ex(0, 1, "Send wakeup");
+#endif
+  
+#ifdef MODE_UART
+    halUartWrite("Send wakeup\n");
+#endif
     // 发送唤醒数据包，进入状态2
     status = 2;
     for(i=0; i<4; i++)
@@ -391,6 +411,7 @@ void main(void)
       status++;
     }
     // 等待一段时间
+    LPM3; // 测试使用，只执行一次循环，测试成功后改成延迟函数
     status = 1;
   }
 #endif
@@ -400,8 +421,22 @@ void main(void)
   {
   loop:
     enterWor();
+#ifdef MODE_OLED
+    halOledShowStr6x8Ex(0, 1, "Enter wor");
+#endif
+  
+#ifdef MODE_UART
+    halUartWrite("Enter wor\n");
+#endif
     status = 2;
     LPM3; // msp430进入低功耗模式，程序将在这里停止，等待唤醒数据包
+#ifdef MODE_OLED
+    halOledShowStr6x8Ex(0, 2, "Wakeup");
+#endif
+  
+#ifdef MODE_UART
+    halUartWrite("Wakeup\n");
+#endif
     INIT_TIMER_A(1000);
     status = 3;
     nms = 0;
