@@ -116,26 +116,16 @@ uint8 _read(void)
 // t为数组 元素个数为3 分别表示 符号 整数部分 小数部分
 uint8 halTemp(uint8 *t)
 {
-  uint8 i;
+  uint8 i, j;
   uint16 temp;
   
-  // 使用定时器进行错误次数检测
-  INIT_TIMER_A(1000);
-  nms = 0;
-  START_TIMER_A;
-  while(_init()==1)
+  j = 0;
+  do
   {
-    if(nms>100)
-    {
-      STOP_TIMER_A;
-      return 1;
-    }
-  }
-  STOP_TIMER_A;
-//  do
-//  {
-//    i = _init();
-//  }while(i); // 等待初始化完成（容易变成死循环，需要改成错误次数 2015-03-20 11:10）
+    i = _init();
+    j++;
+  }while((i==1)&&(j<=10)); // 当设备不存在（i==1）而且重试次数不超过10次时循环
+  
   _skip();
   _convert(); // 先转换一次，避免出现85的问题
   
@@ -144,24 +134,13 @@ uint8 halTemp(uint8 *t)
     _delayus(60000);
   }
   
-  // 使用定时器进行错误次数检测
-  INIT_TIMER_A(1000);
-  nms = 0;
-  START_TIMER_A;
-  while(_init()==1)
+  j = 0;
+  do
   {
-    if(nms>100)
-    {
-      STOP_TIMER_A;
-      return 1;
-    }
-  }
-  STOP_TIMER_A;
+    i = _init();
+    j++;
+  }while((i==1)&&(j<=10)); // 当设备不存在（i==1）而且重试次数不超过10次时循环
   
-//  do
-//  {
-//    i = _init();
-//  }while(i);
   _skip();
   _sp(); // 发送读取温度指令
   

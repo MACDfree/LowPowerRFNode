@@ -2,15 +2,6 @@
 #include "hal_types.h"
 #include "delay.h"
 
-uint16 nms = 0;
-
-// 定时器A中断处理函数
-#pragma vector=TIMERA0_VECTOR
-__interrupt void IntimerA(void)
-{
-  nms = (nms + 1) % 60000;
-}
-
 // 使用Timer_A实现延时，n (us微秒)
 void _delayus(uint16 n)
 {

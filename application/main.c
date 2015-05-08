@@ -15,12 +15,15 @@ MODE_TEST为测试标志
 如果定义测试标志，则MODE_OLED或MODE_UART也需要定义（两者可同时定义）
 */
 #define MODE_TEST // 测试模式
-//#define MODE_HJ // 汇集节点模式
-#define MODE_CJ // 采集节点模式
-#define MODE_OLED // 使用OLED
-//#define MODE_UART // 使用串口
+#define MODE_HJ // 汇集节点模式
+//#define MODE_CJ // 采集节点模式
+//#define MODE_OLED // 使用OLED
+#define MODE_UART // 使用串口
 
 // 定义节点基本信息
+/*
+注意编译时修改配置文件中节点地址
+*/
 #define ADDR_HJ 10 // 汇集节点地址为10
 #define ADDR_CJ1 11 // 采集节点1地址
 #define ADDR_CJ2 12 // 采集节点2地址
@@ -51,11 +54,13 @@ MODE_TEST为测试标志
 uint8 status = 0; // 记录节点工作状态
 uint8 isSent = 0; // 是否发送完成标志
 uint8 isReceived = 0; // 是否接收完成标志
+uint16 nms = 0; // 定时器计数
 
 #ifdef MODE_CJ
 uint8 len = 0; // 中断中使用以记录数据包长度
 uint8 stat = 0; // 中断中使用以记录数据状态
 uint8 pak[5] = {0}; // 中断中使用以接收唤醒数据包
+uint8 MCSM2, WOREVT1, WOREVT0, WORCTRL; // 保存原始值
 #endif
 
 #ifdef MODE_TEST
@@ -133,15 +138,19 @@ void ioInit(void)
 void enterWor(void)
 {
   halRfStrobe(CC1101_SIDLE);
+  MCSM2 = halRfReadReg(CC1101_MCSM2);
   halRfWriteReg(CC1101_MCSM2, 0x04);// 占空比0.781%
   
   /* tevent0 1.125s
    * tevent0=750/(26*10^6)*event0*2^(5*WOR_RES)
    *             晶振频率
    * event0=39000(0x9858) */
+  WOREVT1 = halRfReadReg(CC1101_WOREVT1);
+  WOREVT0 = halRfReadReg(CC1101_WOREVT0);
   halRfWriteReg(CC1101_WOREVT1, 0x98);
   halRfWriteReg(CC1101_WOREVT0, 0x58);
   
+  WORCTRL = halRfReadReg(CC1101_WORCTRL);
   halRfWriteReg(CC1101_WORCTRL, 0x38); // EVENT1=3,RC_CAL=1,WOR_RES=0
   
   halRfStrobe(CC1101_SWORRST);
@@ -210,6 +219,10 @@ __interrupt void ei(void)
         {
           halRfStrobe(CC1101_SIDLE);
           halRfStrobe(CC1101_SFRX);
+          halRfWriteReg(CC1101_MCSM2, MCSM2);
+          halRfWriteReg(CC1101_WOREVT1, WOREVT1);
+          halRfWriteReg(CC1101_WOREVT0, WOREVT0);
+          halRfWriteReg(CC1101_WORCTRL, WORCTRL);
           LPM3_EXIT; // msp430退出低功耗模式
         }
       }
@@ -217,6 +230,10 @@ __interrupt void ei(void)
     else if(status==3)
     {
       isReceived = 1;
+    }
+    else if(status==4)
+    {
+      isSent = 1;
     }
 #endif
     _EINT();
@@ -293,7 +310,32 @@ uint8 receivePacket(uint8 *data, uint8 *length)
   uint8 rc;
   isReceived = 0;
   halRfStrobe(CC1101_SRX);
-  while(isReceived==0);
+  
+#ifdef MODE_OLED
+  rc = halRfGetRxStatus();
+  itob(rc, test);
+  halOledShowStr6x8Ex(0, 4, test);
+#endif
+  
+  INIT_TIMER_A(1000);
+  nms = 0;
+  START_TIMER_A;
+  while(1)
+  {
+    if(isReceived==1)
+    {
+      STOP_TIMER_A;
+      break;
+    }
+    if(nms>1000)
+    {
+      STOP_TIMER_A;
+      halRfStrobe(CC1101_SIDLE);
+      halRfStrobe(CC1101_SFRX);
+      return 5; // 接收超时
+    }
+  }
+  
   rc = halRfReadFifo(length, 1);
 
   if((rc & CC1101_STATUS_STATE_BM) == CC1101_STATE_RX_OVERFLOW)
@@ -329,18 +371,26 @@ uint8 receivePacket(uint8 *data, uint8 *length)
   return rc;
 }
 
+// 定时器A中断处理函数
+#pragma vector=TIMERA0_VECTOR
+__interrupt void IntimerA(void)
+{
+  nms = (nms + 1) % 60000;
+}
+
 void main(void)
 {
-  uint8 length;
+  uint8 length=0;
 #ifdef MODE_HJ
   // 此为接收数据包
   // [0]目的地址 [1]源地址 [2-3]16位密钥 [4]符号位 [5]整数 [6]小数 [7]RSSI [8]LQI
+  // 总共4个节点，所以使用4行的二维数组保存数据
   uint8 pakTemp[4][9] = {0};
   
   // 此为发送数据包
   // [0]包长:4；[1]目的地址:11-14；[2]源地址:10；[3-4]16位密钥
   uint8 pakAsk[5] = {4, 0, ADDR_HJ, KEY_L, KEY_H};
-  uint8 i;
+  uint8 i, j;
 #endif
   
 #ifdef MODE_CJ
@@ -351,6 +401,7 @@ void main(void)
   // 此为发送数据包
   // [0]包长:7；[1]目的地址:10；[2]源地址:11-14；[3-4]16位密钥；[5]符号位；[6]整数部分；[7]小数部分
   uint8 pakTemp[8] = {7, ADDR_HJ, ADDR_CJ, KEY_L, KEY_H, 0, 0, 0};
+  uint8 err;
 #endif
   
   WDTCTL = WDTPW + WDTHOLD;
@@ -366,7 +417,7 @@ void main(void)
 #ifdef MODE_UART
   halUartInit();
 #endif
-  
+  _DINT();
   halSpiInit();
   halRfReset();
   halRfConfig(&rf_setting3, myPaTable2, 8);
@@ -386,8 +437,17 @@ void main(void)
 #ifdef MODE_HJ
   while(1)
   {
-    INIT_TIMER_A(1000);
+    // 清空缓冲区
+    for(i=0; i<4; i++)
+    {
+      for(j=0; j<9; j++)
+      {
+        pakTemp[i][j] = 0;
+      }
+    }
+    
     wakeUp();
+    
 #ifdef MODE_OLED
     halOledShowStr6x8Ex(0, 1, "Send wakeup");
 #endif
@@ -395,23 +455,57 @@ void main(void)
 #ifdef MODE_UART
     halUartWrite("Send wakeup\n");
 #endif
+    
     // 发送唤醒数据包，进入状态2
     status = 2;
     for(i=0; i<4; i++)
     {
-      pakAsk[1] = ADDR_CJ1 + i;
+      pakAsk[1] = i + ADDR_CJ1;
       sendPacket(pakAsk, 5);
       // 发送节点i+1定向询问数据包，进入状态3
       status++;
-      nms = 0;
-      START_TIMER_A;
-      while((receivePacket(pakTemp[i], &length)!=0) &&
-            (nms<100));
-      STOP_TIMER_A;
+      while((receivePacket(pakTemp[i], &length)!=0)&&
+            (receivePacket(pakTemp[i], &length)!=5)); //5为超时错误
       status++;
     }
+    
+#ifdef MODE_OLED
+    halOledShowStr6x8Ex(0, 2, "Received");
+#endif
+  
+#ifdef MODE_UART
+    halUartWrite("d: ");
+    itoh(pakTemp[0][0], test);
+    halUartWrite(test);
+    halUartWrite("| s: ");
+    itoh(pakTemp[0][1], test);
+    halUartWrite(test);
+    halUartWrite("| key: ");
+    itoh(pakTemp[0][2], test);
+    halUartWrite(test);
+    halUartWrite(",");
+    itoh(pakTemp[0][3], test);
+    halUartWrite(test);
+    halUartWrite("| temp: ");
+    itoo(pakTemp[0][4], test);
+    halUartWrite(test);
+    halUartWrite(",");
+    itoo(pakTemp[0][5], test);
+    halUartWrite(test);
+    halUartWrite(",");
+    itoo(pakTemp[0][6], test);
+    halUartWrite(test);
+    halUartWrite("| rssi: ");
+    itoo(pakTemp[0][7], test);
+    halUartWrite(test);
+    halUartWrite("| lqi: ");
+    itoo(pakTemp[0][8] & CC1101_LQI_EST_BM, test);
+    halUartWrite(test);
+    halUartWrite("\n");
+#endif
+    
     // 等待一段时间
-    LPM3; // 测试使用，只执行一次循环，测试成功后改成延迟函数
+    //LPM3; // 测试使用，只执行一次循环，测试成功后改成延迟函数
     status = 1;
   }
 #endif
@@ -428,35 +522,50 @@ void main(void)
 #ifdef MODE_UART
     halUartWrite("Enter wor\n");
 #endif
+    
     status = 2;
     LPM3; // msp430进入低功耗模式，程序将在这里停止，等待唤醒数据包
+    
 #ifdef MODE_OLED
     halOledShowStr6x8Ex(0, 2, "Wakeup");
+    uint8 rc = halRfGetRxStatus();
+    itob(rc, test);
+    halOledShowStr6x8Ex(0, 3, test);
 #endif
   
 #ifdef MODE_UART
     halUartWrite("Wakeup\n");
+    uint8 rc = halRfGetRxStatus();
+    itob(rc, test);
+    halUartWrite(test);
+    halUartWrite("\n");
 #endif
-    INIT_TIMER_A(1000);
+    
     status = 3;
-    nms = 0;
-    START_TIMER_A;
     while(1)
     {
-      if(receivePacket(pakAsk, &length)==0)
+      err = receivePacket(pakAsk, &length);
+      if(err==0)
       {
-        STOP_TIMER_A;
         break;
       }
-      if(nms>500)
+      else if(err==5)
       {
-        STOP_TIMER_A;
         goto loop;
       }
     }
     status = 4;
-    halTemp(pakTemp+5);
+    halTemp(pakTemp+5); // 获取温度
     sendPacket(pakTemp, 8);
+    
+#ifdef MODE_OLED
+    halOledShowStr6x8Ex(0, 5, "send temp finished");
+#endif
+  
+#ifdef MODE_UART
+    halUartWrite("send temp finished\n");
+#endif
+    
     status = 5;
   }
 #endif
