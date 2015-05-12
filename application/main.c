@@ -239,41 +239,6 @@ __interrupt void ei(void)
     _EINT();
   }
 
-//#ifdef MODE_CJ
-//  uint8 rc;
-//  if((P1IFG & BIT5) != 0)
-//  {
-//    _DINT();
-//    P1IFG &= ~BIT5;
-//    rc = halRfReadFifo(&len, 1);
-//    if((rc & CC1101_STATUS_STATE_BM) == CC1101_STATE_RX_OVERFLOW)
-//    {
-//      goto err;
-//    }
-//    else if(len == 0 || len > 8)
-//    {
-//      goto err;
-//    }
-//    else
-//    {
-//      halRfReadFifo(pak, len + 2);
-//      if((pak[len+1] & CC1101_LQI_CRC_OK_BM) != CC1101_LQI_CRC_OK_BM)
-//      {
-//        goto err;
-//      }
-//      else
-//      {
-//        isSent = 1;
-//      }
-//    }
-//  err:
-//    halRfStrobe(CC1101_SIDLE);
-//    halRfStrobe(CC1101_SFRX);
-//    enterWor();
-//    _EINT();
-//  }
-//#endif
-
 }
 
 // 发送数据包
