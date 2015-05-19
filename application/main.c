@@ -7,40 +7,45 @@
 #include "hal_ds18b20.h"
 #include "delay.h"
 #include "hal_clock.h"
+#include "hal_led.h"
+#include "settings.h"
 
-// 定义条件编译标识
-/*
-节点工作模式分为汇集节点（MODE_HJ）和采集节点（MODE_CJ）
-MODE_TEST为测试标志
-如果定义测试标志，则MODE_OLED或MODE_UART也需要定义（两者可同时定义）
-*/
-#define MODE_TEST // 测试模式
-#define MODE_HJ // 汇集节点模式
-//#define MODE_CJ // 采集节点模式
-//#define MODE_OLED // 使用OLED
-#define MODE_UART // 使用串口
-
-// 定义节点基本信息
-/*
-注意编译时修改配置文件中节点地址
-*/
-#define ADDR_HJ 10 // 汇集节点地址为10
-#define ADDR_CJ1 11 // 采集节点1地址
-#define ADDR_CJ2 12 // 采集节点2地址
-#define ADDR_CJ3 13 // 采集节点3地址
-#define ADDR_CJ4 14 // 采集节点4地址
-#define ADDR_CJ 11 // 采集节点地址
-#define ADDR_B 0 // 广播地址为0
-#define KEY_H 111 // 密钥高8位
-#define KEY_L 111 // 密钥低8位
-
-#ifdef MODE_HJ
-#define LEN 7
-#endif
-
-#ifdef MODE_CJ
-#define LEN 4
-#endif
+//// 定义条件编译标识
+///*
+//节点工作模式分为汇集节点（MODE_HJ）和采集节点（MODE_CJ）
+//MODE_TEST为测试标志
+//如果定义测试标志，则MODE_OLED或MODE_UART也需要定义（两者可同时定义）
+//*/
+//#define MODE_TEST // 测试模式
+//#define MODE_HJ // 汇集节点模式
+////#define MODE_CJ // 采集节点模式
+////#define MODE_OLED // 使用OLED
+//#define MODE_UART // 使用串口
+//
+//// 定义节点基本信息
+///*
+//注意编译时修改配置文件中节点地址
+//*/
+//// 这边也要改
+//#define ADDR_CJ 12 // 采集节点地址
+//
+//#define ADDR_HJ 10 // 汇集节点地址为10
+//#define ADDR_CJ1 11 // 采集节点1地址
+//#define ADDR_CJ2 12 // 采集节点2地址
+//#define ADDR_CJ3 13 // 采集节点3地址
+//#define ADDR_CJ4 14 // 采集节点4地址
+//
+//#define ADDR_B 0 // 广播地址为0
+//#define KEY_H 111 // 密钥高8位
+//#define KEY_L 111 // 密钥低8位
+//
+//#ifdef MODE_HJ
+//#define LEN 7
+//#endif
+//
+//#ifdef MODE_CJ
+//#define LEN 4
+//#endif
 
 
 #ifdef MODE_UART
@@ -282,7 +287,7 @@ uint8 receivePacket(uint8 *data, uint8 *length)
   halOledShowStr6x8Ex(0, 4, test);
 #endif
   
-  INIT_TIMER_A(1000);
+  INIT_TIMER_A(1000); // 传入参数1000表示每1ms进一次中断
   nms = 0;
   START_TIMER_A;
   while(1)
@@ -292,7 +297,13 @@ uint8 receivePacket(uint8 *data, uint8 *length)
       STOP_TIMER_A;
       break;
     }
-    if(nms>1000)
+    /*
+    对于采集节点，当接收到唤醒包后，设置接收超时时间，超过时间后重新进入wor模式
+    时间设置为4倍的汇集节点超时时间
+    对于汇集节点，发送完定向询问包后，设置接收超时时间，超过时间后跳过该节点
+    由于采集节点要进行温度转换，需要1.2s，所以超时时间设置应大于1.2s
+    */
+    if(nms>TIMEOUT) // 此处设置接收超时时间
     {
       STOP_TIMER_A;
       halRfStrobe(CC1101_SIDLE);
@@ -370,10 +381,13 @@ void main(void)
 #endif
   
   WDTCTL = WDTPW + WDTHOLD;
+  INIT_IO;
   
   initClock();
+  //LED_ON(4);
 
   ioInit();
+  //LED_ON(3);
   
 #ifdef MODE_OLED
   halOledInit();
@@ -384,8 +398,17 @@ void main(void)
 #endif
   _DINT();
   halSpiInit();
+  //LED_ON(2);
   halRfReset();
+  //LED_ON(1);
   halRfConfig(&rf_setting3, myPaTable2, 8);
+  //LED_ON(0);
+  
+  //LED_OFF(0);
+  //LED_OFF(1);
+  //LED_OFF(2);
+  //LED_OFF(3);
+  //LED_OFF(4);
   
   // 初始化完成，进入状态1
   status = 1;
@@ -467,6 +490,34 @@ void main(void)
     itoo(pakTemp[0][8] & CC1101_LQI_EST_BM, test);
     halUartWrite(test);
     halUartWrite("\n");
+    halUartWrite("d: ");
+    itoh(pakTemp[1][0], test);
+    halUartWrite(test);
+    halUartWrite("| s: ");
+    itoh(pakTemp[1][1], test);
+    halUartWrite(test);
+    halUartWrite("| key: ");
+    itoh(pakTemp[1][2], test);
+    halUartWrite(test);
+    halUartWrite(",");
+    itoh(pakTemp[1][3], test);
+    halUartWrite(test);
+    halUartWrite("| temp: ");
+    itoo(pakTemp[1][4], test);
+    halUartWrite(test);
+    halUartWrite(",");
+    itoo(pakTemp[1][5], test);
+    halUartWrite(test);
+    halUartWrite(",");
+    itoo(pakTemp[1][6], test);
+    halUartWrite(test);
+    halUartWrite("| rssi: ");
+    itoo(pakTemp[1][7], test);
+    halUartWrite(test);
+    halUartWrite("| lqi: ");
+    itoo(pakTemp[1][8] & CC1101_LQI_EST_BM, test);
+    halUartWrite(test);
+    halUartWrite("\n");
 #endif
     
     // 等待一段时间
@@ -489,6 +540,7 @@ void main(void)
 #endif
     
     status = 2;
+    //LED_STATE_ON(status);
     LPM3; // msp430进入低功耗模式，程序将在这里停止，等待唤醒数据包
     
 #ifdef MODE_OLED
@@ -507,6 +559,7 @@ void main(void)
 #endif
     
     status = 3;
+    //LED_STATE_ON(status);
     while(1)
     {
       err = receivePacket(pakAsk, &length);
@@ -520,6 +573,7 @@ void main(void)
       }
     }
     status = 4;
+    //LED_STATE_ON(status);
     halTemp(pakTemp+5); // 获取温度
     sendPacket(pakTemp, 8);
     
@@ -532,6 +586,7 @@ void main(void)
 #endif
     
     status = 5;
+    //LED_STATE_ON(status);
   }
 #endif
 

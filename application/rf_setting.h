@@ -3,6 +3,7 @@
 
 #include "hal_types.h"
 #include "hal_rf.h"
+#include "settings.h"
 
 /*
 const hal_rf_config rf_setting1 = 
@@ -126,7 +127,7 @@ const hal_rf_config rf_setting3 =
 
   0x06,   // PKTCTRL1  Packet automation control.
   0x05,   // PKTCTRL0  Packet automation control.
-  10,   // ADDR      Device address. // 使用十进制表示
+  ADDR,   // ADDR      Device address. // 使用十进制表示
   0x0f    // PKTLEN    Packet length.
 };
 
