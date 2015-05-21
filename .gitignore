@@ -1,8 +1,8 @@
 #过滤iar生成的工程文件
-*.dep
-*.ewd
-*.ewp
-*.eww
+#*.dep
+#*.ewd
+#*.ewp
+#*.eww
 
 #过滤iar生成的文件夹
 Debug/
