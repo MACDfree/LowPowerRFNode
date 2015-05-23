@@ -332,18 +332,23 @@ uint8 receivePacket(uint8 *data, uint8 *length)
     if((data[*length+1] & CC1101_LQI_CRC_OK_BM) != 
        CC1101_LQI_CRC_OK_BM)
     {
+      halRfStrobe(CC1101_SIDLE);
+      halRfStrobe(CC1101_SFRX);
       rc = 3; // error 3
     }
     else if(data[2]!=KEY_L || data[3]!=KEY_H)
     {
+      halRfStrobe(CC1101_SIDLE);
+      halRfStrobe(CC1101_SFRX);
       rc = 4; // error 4
     }
     else
     {
+      halRfStrobe(CC1101_SIDLE);
+      halRfStrobe(CC1101_SFRX);
       rc = 0; // ok
     }
   }
-  halRfStrobe(CC1101_SFRX);
   return rc;
 }
 
@@ -384,10 +389,8 @@ void main(void)
   INIT_IO;
   
   initClock();
-  //LED_ON(4);
 
   ioInit();
-  //LED_ON(3);
   
 #ifdef MODE_OLED
   halOledInit();
@@ -398,17 +401,8 @@ void main(void)
 #endif
   _DINT();
   halSpiInit();
-  //LED_ON(2);
   halRfReset();
-  //LED_ON(1);
   halRfConfig(&rf_setting3, myPaTable2, 8);
-  //LED_ON(0);
-  
-  //LED_OFF(0);
-  //LED_OFF(1);
-  //LED_OFF(2);
-  //LED_OFF(3);
-  //LED_OFF(4);
   
   // 初始化完成，进入状态1
   status = 1;
@@ -518,6 +512,62 @@ void main(void)
     itoo(pakTemp[1][8] & CC1101_LQI_EST_BM, test);
     halUartWrite(test);
     halUartWrite("\n");
+    halUartWrite("d: ");
+    itoh(pakTemp[2][0], test);
+    halUartWrite(test);
+    halUartWrite("| s: ");
+    itoh(pakTemp[2][1], test);
+    halUartWrite(test);
+    halUartWrite("| key: ");
+    itoh(pakTemp[2][2], test);
+    halUartWrite(test);
+    halUartWrite(",");
+    itoh(pakTemp[2][3], test);
+    halUartWrite(test);
+    halUartWrite("| temp: ");
+    itoo(pakTemp[2][4], test);
+    halUartWrite(test);
+    halUartWrite(",");
+    itoo(pakTemp[2][5], test);
+    halUartWrite(test);
+    halUartWrite(",");
+    itoo(pakTemp[2][6], test);
+    halUartWrite(test);
+    halUartWrite("| rssi: ");
+    itoo(pakTemp[2][7], test);
+    halUartWrite(test);
+    halUartWrite("| lqi: ");
+    itoo(pakTemp[2][8] & CC1101_LQI_EST_BM, test);
+    halUartWrite(test);
+    halUartWrite("\n");
+    halUartWrite("d: ");
+    itoh(pakTemp[3][0], test);
+    halUartWrite(test);
+    halUartWrite("| s: ");
+    itoh(pakTemp[3][1], test);
+    halUartWrite(test);
+    halUartWrite("| key: ");
+    itoh(pakTemp[3][2], test);
+    halUartWrite(test);
+    halUartWrite(",");
+    itoh(pakTemp[3][3], test);
+    halUartWrite(test);
+    halUartWrite("| temp: ");
+    itoo(pakTemp[3][4], test);
+    halUartWrite(test);
+    halUartWrite(",");
+    itoo(pakTemp[3][5], test);
+    halUartWrite(test);
+    halUartWrite(",");
+    itoo(pakTemp[3][6], test);
+    halUartWrite(test);
+    halUartWrite("| rssi: ");
+    itoo(pakTemp[3][7], test);
+    halUartWrite(test);
+    halUartWrite("| lqi: ");
+    itoo(pakTemp[3][8] & CC1101_LQI_EST_BM, test);
+    halUartWrite(test);
+    halUartWrite("\n");
 #endif
     
     // 等待一段时间
@@ -532,6 +582,7 @@ void main(void)
   loop:
     enterWor();
 #ifdef MODE_OLED
+    halOledClear();
     halOledShowStr6x8Ex(0, 1, "Enter wor");
 #endif
   
@@ -542,6 +593,8 @@ void main(void)
     status = 2;
     //LED_STATE_ON(status);
     LPM3; // msp430进入低功耗模式，程序将在这里停止，等待唤醒数据包
+    
+    LED_ON(0);
     
 #ifdef MODE_OLED
     halOledShowStr6x8Ex(0, 2, "Wakeup");
@@ -559,7 +612,6 @@ void main(void)
 #endif
     
     status = 3;
-    //LED_STATE_ON(status);
     while(1)
     {
       err = receivePacket(pakAsk, &length);
@@ -569,16 +621,21 @@ void main(void)
       }
       else if(err==5)
       {
+        LED_OFF(0);
         goto loop;
       }
     }
+    LED_ON(1);
     status = 4;
     //LED_STATE_ON(status);
     halTemp(pakTemp+5); // 获取温度
+    LED_ON(2);
     sendPacket(pakTemp, 8);
+    LED_ON(3);
     
 #ifdef MODE_OLED
     halOledShowStr6x8Ex(0, 5, "send temp finished");
+    halOledClear();
 #endif
   
 #ifdef MODE_UART
@@ -586,7 +643,7 @@ void main(void)
 #endif
     
     status = 5;
-    //LED_STATE_ON(status);
+    LED_OFF(0);LED_OFF(1);LED_OFF(2);LED_OFF(3);
   }
 #endif
 
