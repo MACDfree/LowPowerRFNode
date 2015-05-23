@@ -197,12 +197,30 @@ __interrupt void ei(void)
       {
         halRfStrobe(CC1101_SIDLE);
         halRfStrobe(CC1101_SFRX);
+        /*
+        添加代码，如果被误唤醒，
+        则需要重新填充相关寄存器保证保持最原始的寄存器值
+        */
+        halRfWriteReg(CC1101_MCSM2, MCSM2);
+        halRfWriteReg(CC1101_WOREVT1, WOREVT1);
+        halRfWriteReg(CC1101_WOREVT0, WOREVT0);
+        halRfWriteReg(CC1101_WORCTRL, WORCTRL);
+        //end
         enterWor();
       }
       else if(len!=3) // 根据包长判断是否是唤醒数据包，包长为3
       {
         halRfStrobe(CC1101_SIDLE);
         halRfStrobe(CC1101_SFRX);
+        /*
+        添加代码，如果被误唤醒，
+        则需要重新填充相关寄存器保证保持最原始的寄存器值
+        */
+        halRfWriteReg(CC1101_MCSM2, MCSM2);
+        halRfWriteReg(CC1101_WOREVT1, WOREVT1);
+        halRfWriteReg(CC1101_WOREVT0, WOREVT0);
+        halRfWriteReg(CC1101_WORCTRL, WORCTRL);
+        //end
         enterWor();
       }
       else
@@ -212,12 +230,30 @@ __interrupt void ei(void)
         {
           halRfStrobe(CC1101_SIDLE);
           halRfStrobe(CC1101_SFRX);
+          /*
+          添加代码，如果被误唤醒，
+          则需要重新填充相关寄存器保证保持最原始的寄存器值
+          */
+          halRfWriteReg(CC1101_MCSM2, MCSM2);
+          halRfWriteReg(CC1101_WOREVT1, WOREVT1);
+          halRfWriteReg(CC1101_WOREVT0, WOREVT0);
+          halRfWriteReg(CC1101_WORCTRL, WORCTRL);
+          //end
           enterWor();
         }
         else if(pak[1]!=KEY_L || pak[2]!=KEY_H) // 检验16位密钥
         {
           halRfStrobe(CC1101_SIDLE);
           halRfStrobe(CC1101_SFRX);
+          /*
+          添加代码，如果被误唤醒，
+          则需要重新填充相关寄存器保证保持最原始的寄存器值
+          */
+          halRfWriteReg(CC1101_MCSM2, MCSM2);
+          halRfWriteReg(CC1101_WOREVT1, WOREVT1);
+          halRfWriteReg(CC1101_WOREVT0, WOREVT0);
+          halRfWriteReg(CC1101_WORCTRL, WORCTRL);
+          //end
           enterWor();
         }
         else // 所有检验通过
@@ -243,7 +279,6 @@ __interrupt void ei(void)
 #endif
     _EINT();
   }
-
 }
 
 // 发送数据包
@@ -569,9 +604,6 @@ void main(void)
     halUartWrite(test);
     halUartWrite("\n");
 #endif
-    
-    // 等待一段时间
-    //LPM3; // 测试使用，只执行一次循环，测试成功后改成延迟函数
     status = 1;
   }
 #endif
@@ -591,7 +623,6 @@ void main(void)
 #endif
     
     status = 2;
-    //LED_STATE_ON(status);
     LPM3; // msp430进入低功耗模式，程序将在这里停止，等待唤醒数据包
     
     LED_ON(0);
@@ -627,7 +658,6 @@ void main(void)
     }
     LED_ON(1);
     status = 4;
-    //LED_STATE_ON(status);
     halTemp(pakTemp+5); // 获取温度
     LED_ON(2);
     sendPacket(pakTemp, 8);
