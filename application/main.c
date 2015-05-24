@@ -10,44 +10,6 @@
 #include "hal_led.h"
 #include "settings.h"
 
-//// 定义条件编译标识
-///*
-//节点工作模式分为汇集节点（MODE_HJ）和采集节点（MODE_CJ）
-//MODE_TEST为测试标志
-//如果定义测试标志，则MODE_OLED或MODE_UART也需要定义（两者可同时定义）
-//*/
-//#define MODE_TEST // 测试模式
-//#define MODE_HJ // 汇集节点模式
-////#define MODE_CJ // 采集节点模式
-////#define MODE_OLED // 使用OLED
-//#define MODE_UART // 使用串口
-//
-//// 定义节点基本信息
-///*
-//注意编译时修改配置文件中节点地址
-//*/
-//// 这边也要改
-//#define ADDR_CJ 12 // 采集节点地址
-//
-//#define ADDR_HJ 10 // 汇集节点地址为10
-//#define ADDR_CJ1 11 // 采集节点1地址
-//#define ADDR_CJ2 12 // 采集节点2地址
-//#define ADDR_CJ3 13 // 采集节点3地址
-//#define ADDR_CJ4 14 // 采集节点4地址
-//
-//#define ADDR_B 0 // 广播地址为0
-//#define KEY_H 111 // 密钥高8位
-//#define KEY_L 111 // 密钥低8位
-//
-//#ifdef MODE_HJ
-//#define LEN 7
-//#endif
-//
-//#ifdef MODE_CJ
-//#define LEN 4
-//#endif
-
-
 #ifdef MODE_UART
 #include "hal_uart.h"
 #endif
@@ -65,7 +27,7 @@ uint16 nms = 0; // 定时器计数
 uint8 len = 0; // 中断中使用以记录数据包长度
 uint8 stat = 0; // 中断中使用以记录数据状态
 uint8 pak[5] = {0}; // 中断中使用以接收唤醒数据包
-uint8 MCSM2, WOREVT1, WOREVT0, WORCTRL; // 保存原始值
+uint8 const MCSM2=0x07, WOREVT1=0x87, WOREVT0=0x6b, WORCTRL=0xf8; // 保存原始值，直接固定初始值
 #endif
 
 #ifdef MODE_TEST
@@ -143,19 +105,19 @@ void ioInit(void)
 void enterWor(void)
 {
   halRfStrobe(CC1101_SIDLE);
-  MCSM2 = halRfReadReg(CC1101_MCSM2);
+  //MCSM2 = halRfReadReg(CC1101_MCSM2);
   halRfWriteReg(CC1101_MCSM2, 0x04);// 占空比0.781%
   
   /* tevent0 1.125s
    * tevent0=750/(26*10^6)*event0*2^(5*WOR_RES)
    *             晶振频率
    * event0=39000(0x9858) */
-  WOREVT1 = halRfReadReg(CC1101_WOREVT1);
-  WOREVT0 = halRfReadReg(CC1101_WOREVT0);
+  //WOREVT1 = halRfReadReg(CC1101_WOREVT1);
+  //WOREVT0 = halRfReadReg(CC1101_WOREVT0);
   halRfWriteReg(CC1101_WOREVT1, 0x98);
   halRfWriteReg(CC1101_WOREVT0, 0x58);
   
-  WORCTRL = halRfReadReg(CC1101_WORCTRL);
+  //WORCTRL = halRfReadReg(CC1101_WORCTRL);
   halRfWriteReg(CC1101_WORCTRL, 0x38); // EVENT1=3,RC_CAL=1,WOR_RES=0
   
   halRfStrobe(CC1101_SWORRST);
@@ -197,30 +159,12 @@ __interrupt void ei(void)
       {
         halRfStrobe(CC1101_SIDLE);
         halRfStrobe(CC1101_SFRX);
-        /*
-        添加代码，如果被误唤醒，
-        则需要重新填充相关寄存器保证保持最原始的寄存器值
-        */
-        halRfWriteReg(CC1101_MCSM2, MCSM2);
-        halRfWriteReg(CC1101_WOREVT1, WOREVT1);
-        halRfWriteReg(CC1101_WOREVT0, WOREVT0);
-        halRfWriteReg(CC1101_WORCTRL, WORCTRL);
-        //end
         enterWor();
       }
       else if(len!=3) // 根据包长判断是否是唤醒数据包，包长为3
       {
         halRfStrobe(CC1101_SIDLE);
         halRfStrobe(CC1101_SFRX);
-        /*
-        添加代码，如果被误唤醒，
-        则需要重新填充相关寄存器保证保持最原始的寄存器值
-        */
-        halRfWriteReg(CC1101_MCSM2, MCSM2);
-        halRfWriteReg(CC1101_WOREVT1, WOREVT1);
-        halRfWriteReg(CC1101_WOREVT0, WOREVT0);
-        halRfWriteReg(CC1101_WORCTRL, WORCTRL);
-        //end
         enterWor();
       }
       else
@@ -230,30 +174,12 @@ __interrupt void ei(void)
         {
           halRfStrobe(CC1101_SIDLE);
           halRfStrobe(CC1101_SFRX);
-          /*
-          添加代码，如果被误唤醒，
-          则需要重新填充相关寄存器保证保持最原始的寄存器值
-          */
-          halRfWriteReg(CC1101_MCSM2, MCSM2);
-          halRfWriteReg(CC1101_WOREVT1, WOREVT1);
-          halRfWriteReg(CC1101_WOREVT0, WOREVT0);
-          halRfWriteReg(CC1101_WORCTRL, WORCTRL);
-          //end
           enterWor();
         }
         else if(pak[1]!=KEY_L || pak[2]!=KEY_H) // 检验16位密钥
         {
           halRfStrobe(CC1101_SIDLE);
           halRfStrobe(CC1101_SFRX);
-          /*
-          添加代码，如果被误唤醒，
-          则需要重新填充相关寄存器保证保持最原始的寄存器值
-          */
-          halRfWriteReg(CC1101_MCSM2, MCSM2);
-          halRfWriteReg(CC1101_WOREVT1, WOREVT1);
-          halRfWriteReg(CC1101_WOREVT0, WOREVT0);
-          halRfWriteReg(CC1101_WORCTRL, WORCTRL);
-          //end
           enterWor();
         }
         else // 所有检验通过
@@ -491,120 +417,43 @@ void main(void)
 #endif
   
 #ifdef MODE_UART
-    halUartWrite("d: ");
-    itoh(pakTemp[0][0], test);
-    halUartWrite(test);
-    halUartWrite("| s: ");
-    itoh(pakTemp[0][1], test);
-    halUartWrite(test);
-    halUartWrite("| key: ");
-    itoh(pakTemp[0][2], test);
-    halUartWrite(test);
-    halUartWrite(",");
-    itoh(pakTemp[0][3], test);
-    halUartWrite(test);
-    halUartWrite("| temp: ");
-    itoo(pakTemp[0][4], test);
-    halUartWrite(test);
-    halUartWrite(",");
-    itoo(pakTemp[0][5], test);
-    halUartWrite(test);
-    halUartWrite(",");
-    itoo(pakTemp[0][6], test);
-    halUartWrite(test);
-    halUartWrite("| rssi: ");
-    itoo(pakTemp[0][7], test);
-    halUartWrite(test);
-    halUartWrite("| lqi: ");
-    itoo(pakTemp[0][8] & CC1101_LQI_EST_BM, test);
-    halUartWrite(test);
-    halUartWrite("\n");
-    halUartWrite("d: ");
-    itoh(pakTemp[1][0], test);
-    halUartWrite(test);
-    halUartWrite("| s: ");
-    itoh(pakTemp[1][1], test);
-    halUartWrite(test);
-    halUartWrite("| key: ");
-    itoh(pakTemp[1][2], test);
-    halUartWrite(test);
-    halUartWrite(",");
-    itoh(pakTemp[1][3], test);
-    halUartWrite(test);
-    halUartWrite("| temp: ");
-    itoo(pakTemp[1][4], test);
-    halUartWrite(test);
-    halUartWrite(",");
-    itoo(pakTemp[1][5], test);
-    halUartWrite(test);
-    halUartWrite(",");
-    itoo(pakTemp[1][6], test);
-    halUartWrite(test);
-    halUartWrite("| rssi: ");
-    itoo(pakTemp[1][7], test);
-    halUartWrite(test);
-    halUartWrite("| lqi: ");
-    itoo(pakTemp[1][8] & CC1101_LQI_EST_BM, test);
-    halUartWrite(test);
-    halUartWrite("\n");
-    halUartWrite("d: ");
-    itoh(pakTemp[2][0], test);
-    halUartWrite(test);
-    halUartWrite("| s: ");
-    itoh(pakTemp[2][1], test);
-    halUartWrite(test);
-    halUartWrite("| key: ");
-    itoh(pakTemp[2][2], test);
-    halUartWrite(test);
-    halUartWrite(",");
-    itoh(pakTemp[2][3], test);
-    halUartWrite(test);
-    halUartWrite("| temp: ");
-    itoo(pakTemp[2][4], test);
-    halUartWrite(test);
-    halUartWrite(",");
-    itoo(pakTemp[2][5], test);
-    halUartWrite(test);
-    halUartWrite(",");
-    itoo(pakTemp[2][6], test);
-    halUartWrite(test);
-    halUartWrite("| rssi: ");
-    itoo(pakTemp[2][7], test);
-    halUartWrite(test);
-    halUartWrite("| lqi: ");
-    itoo(pakTemp[2][8] & CC1101_LQI_EST_BM, test);
-    halUartWrite(test);
-    halUartWrite("\n");
-    halUartWrite("d: ");
-    itoh(pakTemp[3][0], test);
-    halUartWrite(test);
-    halUartWrite("| s: ");
-    itoh(pakTemp[3][1], test);
-    halUartWrite(test);
-    halUartWrite("| key: ");
-    itoh(pakTemp[3][2], test);
-    halUartWrite(test);
-    halUartWrite(",");
-    itoh(pakTemp[3][3], test);
-    halUartWrite(test);
-    halUartWrite("| temp: ");
-    itoo(pakTemp[3][4], test);
-    halUartWrite(test);
-    halUartWrite(",");
-    itoo(pakTemp[3][5], test);
-    halUartWrite(test);
-    halUartWrite(",");
-    itoo(pakTemp[3][6], test);
-    halUartWrite(test);
-    halUartWrite("| rssi: ");
-    itoo(pakTemp[3][7], test);
-    halUartWrite(test);
-    halUartWrite("| lqi: ");
-    itoo(pakTemp[3][8] & CC1101_LQI_EST_BM, test);
-    halUartWrite(test);
-    halUartWrite("\n");
+    for(i=0; i<4; i++)
+    {
+      halUartWrite("d: ");
+      itoh(pakTemp[i][0], test);
+      halUartWrite(test);
+      halUartWrite("| s: ");
+      itoh(pakTemp[i][1], test);
+      halUartWrite(test);
+      halUartWrite("| key: ");
+      itoh(pakTemp[i][2], test);
+      halUartWrite(test);
+      halUartWrite(",");
+      itoh(pakTemp[i][3], test);
+      halUartWrite(test);
+      halUartWrite("| temp: ");
+      itoo(pakTemp[i][4], test);
+      halUartWrite(test);
+      halUartWrite(",");
+      itoo(pakTemp[i][5], test);
+      halUartWrite(test);
+      halUartWrite(",");
+      itoo(pakTemp[i][6], test);
+      halUartWrite(test);
+      halUartWrite("| rssi: ");
+      itoo(pakTemp[i][7], test);
+      halUartWrite(test);
+      halUartWrite("| lqi: ");
+      itoo(pakTemp[i][8] & CC1101_LQI_EST_BM, test);
+      halUartWrite(test);
+      halUartWrite("\n");
+    }
 #endif
     status = 1;
+    for(i=0; i<60; i++)
+    {
+      _delayus(6000);
+    }
   }
 #endif
 
