@@ -10,44 +10,6 @@
 #include "hal_led.h"
 #include "settings.h"
 
-//// 定义条件编译标识
-///*
-//节点工作模式分为汇集节点（MODE_HJ）和采集节点（MODE_CJ）
-//MODE_TEST为测试标志
-//如果定义测试标志，则MODE_OLED或MODE_UART也需要定义（两者可同时定义）
-//*/
-//#define MODE_TEST // 测试模式
-//#define MODE_HJ // 汇集节点模式
-////#define MODE_CJ // 采集节点模式
-////#define MODE_OLED // 使用OLED
-//#define MODE_UART // 使用串口
-//
-//// 定义节点基本信息
-///*
-//注意编译时修改配置文件中节点地址
-//*/
-//// 这边也要改
-//#define ADDR_CJ 12 // 采集节点地址
-//
-//#define ADDR_HJ 10 // 汇集节点地址为10
-//#define ADDR_CJ1 11 // 采集节点1地址
-//#define ADDR_CJ2 12 // 采集节点2地址
-//#define ADDR_CJ3 13 // 采集节点3地址
-//#define ADDR_CJ4 14 // 采集节点4地址
-//
-//#define ADDR_B 0 // 广播地址为0
-//#define KEY_H 111 // 密钥高8位
-//#define KEY_L 111 // 密钥低8位
-//
-//#ifdef MODE_HJ
-//#define LEN 7
-//#endif
-//
-//#ifdef MODE_CJ
-//#define LEN 4
-//#endif
-
-
 #ifdef MODE_UART
 #include "hal_uart.h"
 #endif
@@ -60,6 +22,7 @@ uint8 status = 0; // 记录节点工作状态
 uint8 isSent = 0; // 是否发送完成标志
 uint8 isReceived = 0; // 是否接收完成标志
 uint16 nms = 0; // 定时器计数
+uint8 isWakeup = 0; // 标识CC110L工作状态
 
 #ifdef MODE_CJ
 uint8 len = 0; // 中断中使用以记录数据包长度
@@ -140,27 +103,27 @@ void ioInit(void)
 
 #ifdef MODE_CJ
 // 进入WOR模式
-void enterWor(void)
-{
-  halRfStrobe(CC1101_SIDLE);
-  MCSM2 = halRfReadReg(CC1101_MCSM2);
-  halRfWriteReg(CC1101_MCSM2, 0x04);// 占空比0.781%
-  
-  /* tevent0 1.125s
-   * tevent0=750/(26*10^6)*event0*2^(5*WOR_RES)
-   *             晶振频率
-   * event0=39000(0x9858) */
-  WOREVT1 = halRfReadReg(CC1101_WOREVT1);
-  WOREVT0 = halRfReadReg(CC1101_WOREVT0);
-  halRfWriteReg(CC1101_WOREVT1, 0x98);
-  halRfWriteReg(CC1101_WOREVT0, 0x58);
-  
-  WORCTRL = halRfReadReg(CC1101_WORCTRL);
-  halRfWriteReg(CC1101_WORCTRL, 0x38); // EVENT1=3,RC_CAL=1,WOR_RES=0
-  
-  halRfStrobe(CC1101_SWORRST);
-  halRfStrobe(CC1101_SWOR);
-}
+//void enterWor(void)
+//{
+//  halRfStrobe(CC1101_SIDLE);
+//  MCSM2 = halRfReadReg(CC1101_MCSM2);
+//  halRfWriteReg(CC1101_MCSM2, 0x04);// 占空比0.781%
+//  
+//  /* tevent0 1.125s
+//   * tevent0=750/(26*10^6)*event0*2^(5*WOR_RES)
+//   *             晶振频率
+//   * event0=39000(0x9858) */
+//  WOREVT1 = halRfReadReg(CC1101_WOREVT1);
+//  WOREVT0 = halRfReadReg(CC1101_WOREVT0);
+//  halRfWriteReg(CC1101_WOREVT1, 0x98);
+//  halRfWriteReg(CC1101_WOREVT0, 0x58);
+//  
+//  WORCTRL = halRfReadReg(CC1101_WORCTRL);
+//  halRfWriteReg(CC1101_WORCTRL, 0x38); // EVENT1=3,RC_CAL=1,WOR_RES=0
+//  
+//  halRfStrobe(CC1101_SWORRST);
+//  halRfStrobe(CC1101_SWOR);
+//}
 #endif
 
 // 外部中断处理函数
@@ -197,13 +160,13 @@ __interrupt void ei(void)
       {
         halRfStrobe(CC1101_SIDLE);
         halRfStrobe(CC1101_SFRX);
-        enterWor();
+        halRfStrobe(CC1101_SPWD);
       }
       else if(len!=3) // 根据包长判断是否是唤醒数据包，包长为3
       {
         halRfStrobe(CC1101_SIDLE);
         halRfStrobe(CC1101_SFRX);
-        enterWor();
+        halRfStrobe(CC1101_SPWD);
       }
       else
       {
@@ -212,22 +175,18 @@ __interrupt void ei(void)
         {
           halRfStrobe(CC1101_SIDLE);
           halRfStrobe(CC1101_SFRX);
-          enterWor();
+          halRfStrobe(CC1101_SPWD);
         }
         else if(pak[1]!=KEY_L || pak[2]!=KEY_H) // 检验16位密钥
         {
           halRfStrobe(CC1101_SIDLE);
           halRfStrobe(CC1101_SFRX);
-          enterWor();
+          halRfStrobe(CC1101_SPWD);
         }
         else // 所有检验通过
         {
           halRfStrobe(CC1101_SIDLE);
           halRfStrobe(CC1101_SFRX);
-          halRfWriteReg(CC1101_MCSM2, MCSM2);
-          halRfWriteReg(CC1101_WOREVT1, WOREVT1);
-          halRfWriteReg(CC1101_WOREVT0, WOREVT0);
-          halRfWriteReg(CC1101_WORCTRL, WORCTRL);
           LPM3_EXIT; // msp430退出低功耗模式
         }
       }
@@ -267,7 +226,7 @@ void wakeUp(void)
   //设置传输速率为250kb/s 唤醒时间1.125s 需要发送次数250000*1.125/96=2930
   uint16 i;
   //实际测试次数2930/3=977
-  for(i=0; i<977; i++)
+  for(i=0; i<2930; i++)
   {
     sendPacket(pak, 4);
   }
@@ -356,7 +315,38 @@ uint8 receivePacket(uint8 *data, uint8 *length)
 #pragma vector=TIMERA0_VECTOR
 __interrupt void IntimerA(void)
 {
-  nms = (nms + 1) % 60000;
+  if(status==2 && isWakeup==0)
+  {
+    if(nms<1000)
+    {
+      nms++;
+    }
+    else
+    {
+      nms = 0;
+      halRfStrobe(CC1101_SIDLE);
+      halRfStrobe(CC1101_SRX);
+      isWakeup = 1;
+    }
+  }
+  else if(status==2 && isWakeup==1)
+  {
+    if(nms<5)
+    {
+      nms++;
+    }
+    else
+    {
+      nms=0;
+      halRfStrobe(CC1101_SIDLE);
+      halRfStrobe(CC1101_SPWD);
+      isWakeup = 0;
+    }
+  }
+  else
+  {
+    nms = (nms + 1) % 60000;
+  }
 }
 
 void main(void)
@@ -580,19 +570,25 @@ void main(void)
   while(1)
   {
   loop:
-    enterWor();
+    halRfStrobe(CC1101_SPWD);
+    
 #ifdef MODE_OLED
     halOledClear();
-    halOledShowStr6x8Ex(0, 1, "Enter wor");
+    halOledShowStr6x8Ex(0, 1, "Enter Sleep");
 #endif
   
 #ifdef MODE_UART
-    halUartWrite("Enter wor\n");
+    halUartWrite("Enter Sleep\n");
 #endif
     
     status = 2;
-    //LED_STATE_ON(status);
+    INIT_TIMER_A(1000); // 传入参数1000表示每1ms进一次中断
+    nms = 0;
+    START_TIMER_A;
+    
     LPM3; // msp430进入低功耗模式，程序将在这里停止，等待唤醒数据包
+    
+    STOP_TIMER_A;
     
     LED_ON(0);
     
@@ -627,7 +623,6 @@ void main(void)
     }
     LED_ON(1);
     status = 4;
-    //LED_STATE_ON(status);
     halTemp(pakTemp+5); // 获取温度
     LED_ON(2);
     sendPacket(pakTemp, 8);
