@@ -9,11 +9,11 @@ MODE_TEST为测试标志
 如果定义测试标志，则MODE_OLED或MODE_UART也需要定义（两者可同时定义）
 */
 // *需要修改*
-#define MODE_TEST // 测试模式
-#define MODE_HJ // 汇集节点模式
-//#define MODE_CJ // 采集节点模式
+//#define MODE_TEST // 测试模式
+//#define MODE_HJ // 汇集节点模式
+#define MODE_CJ // 采集节点模式
 //#define MODE_OLED // 使用OLED
-#define MODE_UART // 使用串口
+//#define MODE_UART // 使用串口
 
 
 
@@ -31,13 +31,13 @@ MODE_TEST为测试标志
 #ifdef MODE_HJ
 #define LEN 7
 #define ADDR ADDR_HJ
-#define TIMEOUT 2000
+#define TIMEOUT 1500
 #endif
 
 #ifdef MODE_CJ
 #define LEN 4
 #define ADDR ADDR_CJ
-#define TIMEOUT (2000*4)
+#define TIMEOUT (9000)
 #endif
 
 #endif

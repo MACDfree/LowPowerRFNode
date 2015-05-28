@@ -228,7 +228,8 @@ void wakeUp(void)
   //设置传输速率为250kb/s 唤醒时间1.125s 需要发送次数250000*1.125/96=2930
   uint16 i;
   //实际测试次数2930/3=977
-  for(i=0; i<977; i++)
+  //重新测试次数900 时间2015-05-28
+  for(i=0; i<900; i++)
   {
     sendPacket(pak, 4);
   }
@@ -248,14 +249,14 @@ uint8 receivePacket(uint8 *data, uint8 *length)
   halOledShowStr6x8Ex(0, 4, test);
 #endif
   
-  INIT_TIMER_A(1000); // 传入参数1000表示每1ms进一次中断
-  nms = 0;
-  START_TIMER_A;
+//  INIT_TIMER_A(1000); // 传入参数1000表示每1ms进一次中断
+//  nms = 0;
+//  START_TIMER_A;
   while(1)
   {
     if(isReceived==1)
     {
-      STOP_TIMER_A;
+      //STOP_TIMER_A;
       break;
     }
     /*
@@ -307,6 +308,7 @@ uint8 receivePacket(uint8 *data, uint8 *length)
     {
       halRfStrobe(CC1101_SIDLE);
       halRfStrobe(CC1101_SFRX);
+      STOP_TIMER_A;
       rc = 0; // ok
     }
   }
@@ -317,7 +319,7 @@ uint8 receivePacket(uint8 *data, uint8 *length)
 #pragma vector=TIMERA0_VECTOR
 __interrupt void IntimerA(void)
 {
-  nms = (nms + 1) % 60000;
+  nms = (nms + 1) % 0xffff;
 }
 
 void main(void)
@@ -407,6 +409,8 @@ void main(void)
       sendPacket(pakAsk, 5);
       // 发送节点i+1定向询问数据包，进入状态3
       status++;
+      INIT_TIMER_A(1000); // 传入参数1000表示每1ms进一次中断
+      START_TIMER_A;
       while((receivePacket(pakTemp[i], &length)!=0)&&
             (receivePacket(pakTemp[i], &length)!=5)); //5为超时错误
       status++;
@@ -450,7 +454,7 @@ void main(void)
     }
 #endif
     status = 1;
-    for(i=0; i<60; i++)
+    for(i=0; i<120; i++)
     {
       _delayus(6000);
     }
@@ -492,6 +496,9 @@ void main(void)
 #endif
     
     status = 3;
+    INIT_TIMER_A(1000); // 传入参数1000表示每1ms进一次中断
+    nms = 0;
+    START_TIMER_A;
     while(1)
     {
       err = receivePacket(pakAsk, &length);
@@ -507,7 +514,9 @@ void main(void)
     }
     LED_ON(1);
     status = 4;
+    _DINT(); //温度转换是不能被打断
     halTemp(pakTemp+5); // 获取温度
+    _EINT();
     LED_ON(2);
     sendPacket(pakTemp, 8);
     LED_ON(3);
