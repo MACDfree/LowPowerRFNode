@@ -131,7 +131,7 @@ uint8 halTemp(uint8 *t)
   
   for(i=0; i<20; i++) // 转换间隔800ms以上
   {
-    _delayus(60000);
+    _delayus(50000);
   }
   
   j = 0;
