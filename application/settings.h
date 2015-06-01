@@ -19,7 +19,7 @@ MODE_TEST为测试标志
 
 // 定义节点基本信息
 // *需要修改*
-#define ADDR_CJ 14 // 采集节点地址，设置范围11~14
+#define ADDR_CJ 13 // 采集节点地址，设置范围11~14
 
 #define ADDR_HJ 10 // 汇集节点地址为10
 #define ADDR_CJ1 11 // 采集节点1地址
@@ -31,13 +31,13 @@ MODE_TEST为测试标志
 #ifdef MODE_HJ
 #define LEN 7
 #define ADDR ADDR_HJ
-#define TIMEOUT 1500
+#define TIMEOUT 30 // 1.5s
 #endif
 
 #ifdef MODE_CJ
 #define LEN 4
 #define ADDR ADDR_CJ
-#define TIMEOUT (9000)
+#define TIMEOUT 160 // 8s
 #endif
 
 #endif

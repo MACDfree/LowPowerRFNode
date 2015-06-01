@@ -215,6 +215,7 @@ void sendPacket(uint8 *data, uint8 length)
   halRfStrobe(CC1101_STX);
   while(isSent==0);
   
+  halRfStrobe(CC1101_SIDLE);
   halRfStrobe(CC1101_SFTX);
 }
 
@@ -242,21 +243,11 @@ uint8 receivePacket(uint8 *data, uint8 *length)
   uint8 rc;
   isReceived = 0;
   halRfStrobe(CC1101_SRX);
-  
-#ifdef MODE_OLED
-  rc = halRfGetRxStatus();
-  itob(rc, test);
-  halOledShowStr6x8Ex(0, 4, test);
-#endif
-  
-//  INIT_TIMER_A(1000); // 传入参数1000表示每1ms进一次中断
-//  nms = 0;
-//  START_TIMER_A;
+
   while(1)
   {
     if(isReceived==1)
     {
-      //STOP_TIMER_A;
       break;
     }
     /*
@@ -325,6 +316,7 @@ __interrupt void IntimerA(void)
 void main(void)
 {
   uint8 length=0;
+  uint8 err;
 #ifdef MODE_HJ
   // 此为接收数据包
   // [0]目的地址 [1]源地址 [2-3]16位密钥 [4]符号位 [5]整数 [6]小数 [7]RSSI [8]LQI
@@ -345,7 +337,6 @@ void main(void)
   // 此为发送数据包
   // [0]包长:7；[1]目的地址:10；[2]源地址:11-14；[3-4]16位密钥；[5]符号位；[6]整数部分；[7]小数部分
   uint8 pakTemp[8] = {7, ADDR_HJ, ADDR_CJ, KEY_L, KEY_H, 0, 0, 0};
-  uint8 err;
 #endif
   
   WDTCTL = WDTPW + WDTHOLD;
@@ -409,10 +400,17 @@ void main(void)
       sendPacket(pakAsk, 5);
       // 发送节点i+1定向询问数据包，进入状态3
       status++;
-      INIT_TIMER_A(1000); // 传入参数1000表示每1ms进一次中断
+      INIT_TIMER_A(50000); // 传入参数50000表示每50ms进一次中断
       START_TIMER_A;
-      while((receivePacket(pakTemp[i], &length)!=0)&&
-            (receivePacket(pakTemp[i], &length)!=5)); //5为超时错误
+      while(1)
+      {
+        err = receivePacket(pakTemp[i], &length);
+        if(err==0||err==5)
+        {
+          break;
+        }
+      }
+      halRfStrobe(CC1101_SIDLE);
       status++;
     }
     
@@ -453,11 +451,12 @@ void main(void)
       halUartWrite("\n");
     }
 #endif
-    status = 1;
+    
     for(i=0; i<120; i++)
     {
-      _delayus(6000);
+      _delayus(60000);
     }
+    status = 1;
   }
 #endif
 
@@ -496,8 +495,7 @@ void main(void)
 #endif
     
     status = 3;
-    INIT_TIMER_A(1000); // 传入参数1000表示每1ms进一次中断
-    nms = 0;
+    INIT_TIMER_A(50000); // 传入参数50000表示每50ms进一次中断
     START_TIMER_A;
     while(1)
     {
@@ -514,9 +512,7 @@ void main(void)
     }
     LED_ON(1);
     status = 4;
-    _DINT(); //温度转换是不能被打断
     halTemp(pakTemp+5); // 获取温度
-    _EINT();
     LED_ON(2);
     sendPacket(pakTemp, 8);
     LED_ON(3);
