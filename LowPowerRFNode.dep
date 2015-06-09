@@ -8,55 +8,55 @@
     <outputs>
       <file>$PROJ_DIR$\driver\delay.c</file>
       <file>$PROJ_DIR$\application\main.c</file>
-      <file>$PROJ_DIR$\hal\hal_uart.c</file>
-      <file>$PROJ_DIR$\hal\hal_oled_font.h</file>
-      <file>$PROJ_DIR$\hal\hal_oled.c</file>
+      <file>$PROJ_DIR$\hal\hal_oled.h</file>
+      <file>$PROJ_DIR$\hal\hal_uart.h</file>
+      <file>$PROJ_DIR$\hal\hal_cc1101.h</file>
+      <file>$PROJ_DIR$\hal\hal_types.h</file>
       <file>$PROJ_DIR$\driver\hal_clock.c</file>
       <file>$PROJ_DIR$\driver\hal_ds18b20.c</file>
       <file>$PROJ_DIR$\driver\hal_oled.c</file>
       <file>$PROJ_DIR$\driver\hal_rf.c</file>
       <file>$PROJ_DIR$\driver\hal_spi.c</file>
       <file>$PROJ_DIR$\driver\hal_uart.c</file>
-      <file>$PROJ_DIR$\hal\hal_oled.h</file>
+      <file>$PROJ_DIR$\hal\hal_oled_font.h</file>
       <file>$PROJ_DIR$\hal\delay.c</file>
-      <file>$PROJ_DIR$\hal\hal_cc1101.h</file>
-      <file>$PROJ_DIR$\hal\hal_uart.h</file>
-      <file>$PROJ_DIR$\hal\hal_types.h</file>
+      <file>$PROJ_DIR$\hal\hal_oled.c</file>
+      <file>$PROJ_DIR$\hal\hal_uart.c</file>
       <file>$PROJ_DIR$\Debug\Obj\hal_oled.r43</file>
-      <file>$PROJ_DIR$\lib\hal_rf.h</file>
-      <file>$PROJ_DIR$\Debug\Obj\hal_rf.r43</file>
+      <file>$PROJ_DIR$\Debug\Exe\LowPowerRFNode.d43</file>
+      <file>$PROJ_DIR$\Debug\Obj\hal_spi.r43</file>
+      <file>$PROJ_DIR$\Debug\Obj\hal_ds18b20.r43</file>
+      <file>$PROJ_DIR$\Debug\Obj\hal_oled.pbi</file>
       <file>$PROJ_DIR$\Debug\Obj\main.pbi</file>
       <file>$PROJ_DIR$\lib\hal_oled.h</file>
-      <file>$PROJ_DIR$\Debug\Obj\hal_ds18b20.pbi</file>
-      <file>$PROJ_DIR$\lib\hal_cc1101.h</file>
-      <file>$PROJ_DIR$\Debug\Obj\hal_ds18b20.r43</file>
-      <file>$PROJ_DIR$\Debug\Obj\hal_spi.r43</file>
-      <file>$PROJ_DIR$\Debug\Obj\hal_clock.pbi</file>
-      <file>$PROJ_DIR$\Debug\Exe\LowPowerRFNode.d43</file>
-      <file>$TOOLKIT_DIR$\inc\intrinsics.h</file>
-      <file>$PROJ_DIR$\Debug\Obj\hal_oled.pbi</file>
-      <file>$PROJ_DIR$\Debug\Obj\hal_uart.r43</file>
       <file>$PROJ_DIR$\application\rf_setting.h</file>
-      <file>$PROJ_DIR$\lib\hal_types.h</file>
-      <file>$PROJ_DIR$\Debug\Obj\hal_rf.pbi</file>
-      <file>$TOOLKIT_DIR$\inc\msp430x14x.h</file>
+      <file>$PROJ_DIR$\Debug\Obj\hal_uart.r43</file>
+      <file>$TOOLKIT_DIR$\inc\intrinsics.h</file>
+      <file>$PROJ_DIR$\Debug\Obj\hal_clock.pbi</file>
+      <file>$PROJ_DIR$\lib\hal_cc1101.h</file>
       <file>$PROJ_DIR$\Debug\Obj\hal_spi.pbi</file>
-      <file>$TOOLKIT_DIR$\lib\dlib\dl430fn.r43</file>
+      <file>$PROJ_DIR$\Debug\Obj\hal_ds18b20.pbi</file>
+      <file>$PROJ_DIR$\Debug\Obj\hal_rf.r43</file>
+      <file>$PROJ_DIR$\lib\hal_rf.h</file>
+      <file>$TOOLKIT_DIR$\inc\msp430x14x.h</file>
       <file>$PROJ_DIR$\Debug\Obj\delay.r43</file>
-      <file>$PROJ_DIR$\Debug\Obj\delay.pbi</file>
-      <file>$PROJ_DIR$\lib\delay.h</file>
+      <file>$PROJ_DIR$\Debug\Obj\hal_rf.pbi</file>
+      <file>$PROJ_DIR$\lib\hal_types.h</file>
       <file>$TOOLKIT_DIR$\inc\in430.h</file>
+      <file>$PROJ_DIR$\lib\delay.h</file>
+      <file>$PROJ_DIR$\Debug\Obj\delay.pbi</file>
       <file>$PROJ_DIR$\lib\hal_clock.h</file>
+      <file>$TOOLKIT_DIR$\lib\dlib\dl430fn.r43</file>
       <file>$PROJ_DIR$\Debug\Obj\hal_uart.pbi</file>
-      <file>$PROJ_DIR$\..\..\..\..\[ROOT_NODE]</file>
-      <file>$PROJ_DIR$\Debug\Obj\LowPowerRFNode.pbd</file>
       <file>$PROJ_DIR$\Debug\Obj\main.r43</file>
       <file>$PROJ_DIR$\lib\hal_oled_font.h</file>
-      <file>$PROJ_DIR$\lib\hal_uart.h</file>
-      <file>$PROJ_DIR$\lib\hal_ds18b20.h</file>
-      <file>$PROJ_DIR$\Debug\Obj\hal_clock.r43</file>
-      <file>$PROJ_DIR$\application\settings.h</file>
       <file>$TOOLKIT_DIR$\config\lnk430F149.xcl</file>
+      <file>$PROJ_DIR$\Debug\Obj\LowPowerRFNode.pbd</file>
+      <file>$PROJ_DIR$\application\settings.h</file>
+      <file>$PROJ_DIR$\lib\hal_uart.h</file>
+      <file>$PROJ_DIR$\Debug\Obj\hal_clock.r43</file>
+      <file>$PROJ_DIR$\..\..\..\..\[ROOT_NODE]</file>
+      <file>$PROJ_DIR$\lib\hal_ds18b20.h</file>
       <file>$PROJ_DIR$\hal\delay.h</file>
       <file>$PROJ_DIR$\hal\hal_rf.c</file>
       <file>$PROJ_DIR$\hal\hal_rf.h</file>
@@ -69,22 +69,22 @@
       <name>$PROJ_DIR$\driver\delay.c</name>
       <outputs>
         <tool>
-          <name>BICOMP</name>
-          <file> 37</file>
+          <name>ICC430</name>
+          <file> 33</file>
         </tool>
         <tool>
-          <name>ICC430</name>
-          <file> 36</file>
+          <name>BICOMP</name>
+          <file> 38</file>
         </tool>
       </outputs>
       <inputs>
         <tool>
-          <name>BICOMP</name>
-          <file> 33 39 27 31 38</file>
+          <name>ICC430</name>
+          <file> 32 36 25 35 37</file>
         </tool>
         <tool>
-          <name>ICC430</name>
-          <file> 33 39 27 31 38</file>
+          <name>BICOMP</name>
+          <file> 32 36 25 35 37</file>
         </tool>
       </inputs>
     </file>
@@ -92,40 +92,22 @@
       <name>$PROJ_DIR$\application\main.c</name>
       <outputs>
         <tool>
-          <name>BICOMP</name>
-          <file> 19</file>
+          <name>ICC430</name>
+          <file> 42</file>
         </tool>
         <tool>
-          <name>ICC430</name>
-          <file> 44</file>
+          <name>BICOMP</name>
+          <file> 21</file>
         </tool>
       </outputs>
       <inputs>
         <tool>
-          <name>BICOMP</name>
-          <file> 33 39 27 31 56 17 22 30 49 47 38 40 57</file>
-        </tool>
-        <tool>
           <name>ICC430</name>
-          <file> 33 39 27 31 56 17 22 30 49 47 38 40 57</file>
+          <file> 32 36 25 35 56 31 27 23 46 50 37 39 57 47</file>
         </tool>
-      </inputs>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\hal\hal_uart.c</name>
-      <inputs>
         <tool>
           <name>BICOMP</name>
-          <file> 33 39 27 15 14</file>
-        </tool>
-      </inputs>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\hal\hal_oled.c</name>
-      <inputs>
-        <tool>
-          <name>BICOMP</name>
-          <file> 33 39 27 11 15 3</file>
+          <file> 32 36 25 35 56 31 27 23 46 50 37 39 57 47</file>
         </tool>
       </inputs>
     </file>
@@ -133,22 +115,22 @@
       <name>$PROJ_DIR$\driver\hal_clock.c</name>
       <outputs>
         <tool>
-          <name>BICOMP</name>
-          <file> 25</file>
-        </tool>
-        <tool>
           <name>ICC430</name>
           <file> 48</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 26</file>
         </tool>
       </outputs>
       <inputs>
         <tool>
-          <name>BICOMP</name>
-          <file> 33 39 27 31 40</file>
+          <name>ICC430</name>
+          <file> 32 36 25 35 39</file>
         </tool>
         <tool>
-          <name>ICC430</name>
-          <file> 33 39 27 31 40</file>
+          <name>BICOMP</name>
+          <file> 32 36 25 35 39</file>
         </tool>
       </inputs>
     </file>
@@ -156,22 +138,22 @@
       <name>$PROJ_DIR$\driver\hal_ds18b20.c</name>
       <outputs>
         <tool>
-          <name>BICOMP</name>
-          <file> 21</file>
+          <name>ICC430</name>
+          <file> 19</file>
         </tool>
         <tool>
-          <name>ICC430</name>
-          <file> 23</file>
+          <name>BICOMP</name>
+          <file> 29</file>
         </tool>
       </outputs>
       <inputs>
         <tool>
-          <name>BICOMP</name>
-          <file> 33 39 27 31 47 38</file>
+          <name>ICC430</name>
+          <file> 32 36 25 35 50 37</file>
         </tool>
         <tool>
-          <name>ICC430</name>
-          <file> 33 39 27 31 47 38</file>
+          <name>BICOMP</name>
+          <file> 32 36 25 35 50 37</file>
         </tool>
       </inputs>
     </file>
@@ -179,22 +161,22 @@
       <name>$PROJ_DIR$\driver\hal_oled.c</name>
       <outputs>
         <tool>
-          <name>BICOMP</name>
-          <file> 28</file>
-        </tool>
-        <tool>
           <name>ICC430</name>
           <file> 16</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 20</file>
         </tool>
       </outputs>
       <inputs>
         <tool>
-          <name>BICOMP</name>
-          <file> 33 39 27 20 31 45</file>
+          <name>ICC430</name>
+          <file> 32 36 25 22 35 43</file>
         </tool>
         <tool>
-          <name>ICC430</name>
-          <file> 33 39 27 20 31 45</file>
+          <name>BICOMP</name>
+          <file> 32 36 25 22 35 43</file>
         </tool>
       </inputs>
     </file>
@@ -202,22 +184,22 @@
       <name>$PROJ_DIR$\driver\hal_rf.c</name>
       <outputs>
         <tool>
-          <name>BICOMP</name>
-          <file> 32</file>
+          <name>ICC430</name>
+          <file> 30</file>
         </tool>
         <tool>
-          <name>ICC430</name>
-          <file> 18</file>
+          <name>BICOMP</name>
+          <file> 34</file>
         </tool>
       </outputs>
       <inputs>
         <tool>
-          <name>BICOMP</name>
-          <file> 33 39 27 31 56 17 22 38</file>
+          <name>ICC430</name>
+          <file> 32 36 25 35 56 31 27 37</file>
         </tool>
         <tool>
-          <name>ICC430</name>
-          <file> 33 39 27 31 56 17 22 38</file>
+          <name>BICOMP</name>
+          <file> 32 36 25 35 56 31 27 37</file>
         </tool>
       </inputs>
     </file>
@@ -225,22 +207,22 @@
       <name>$PROJ_DIR$\driver\hal_spi.c</name>
       <outputs>
         <tool>
-          <name>BICOMP</name>
-          <file> 34</file>
+          <name>ICC430</name>
+          <file> 18</file>
         </tool>
         <tool>
-          <name>ICC430</name>
-          <file> 24</file>
+          <name>BICOMP</name>
+          <file> 28</file>
         </tool>
       </outputs>
       <inputs>
         <tool>
-          <name>BICOMP</name>
-          <file> 33 39 27 31 56</file>
+          <name>ICC430</name>
+          <file> 32 36 25 35 56</file>
         </tool>
         <tool>
-          <name>ICC430</name>
-          <file> 33 39 27 31 56</file>
+          <name>BICOMP</name>
+          <file> 32 36 25 35 56</file>
         </tool>
       </inputs>
     </file>
@@ -248,22 +230,22 @@
       <name>$PROJ_DIR$\driver\hal_uart.c</name>
       <outputs>
         <tool>
-          <name>BICOMP</name>
-          <file> 41</file>
+          <name>ICC430</name>
+          <file> 24</file>
         </tool>
         <tool>
-          <name>ICC430</name>
-          <file> 29</file>
+          <name>BICOMP</name>
+          <file> 41</file>
         </tool>
       </outputs>
       <inputs>
         <tool>
-          <name>BICOMP</name>
-          <file> 33 39 27 31 46</file>
+          <name>ICC430</name>
+          <file> 32 36 25 35 47</file>
         </tool>
         <tool>
-          <name>ICC430</name>
-          <file> 33 39 27 31 46</file>
+          <name>BICOMP</name>
+          <file> 32 36 25 35 47</file>
         </tool>
       </inputs>
     </file>
@@ -272,7 +254,25 @@
       <inputs>
         <tool>
           <name>BICOMP</name>
-          <file> 33 39 27 15</file>
+          <file> 32 36 25 5</file>
+        </tool>
+      </inputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\hal\hal_oled.c</name>
+      <inputs>
+        <tool>
+          <name>BICOMP</name>
+          <file> 32 36 25 2 5 12</file>
+        </tool>
+      </inputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\hal\hal_uart.c</name>
+      <inputs>
+        <tool>
+          <name>BICOMP</name>
+          <file> 32 36 25 5 3</file>
         </tool>
       </inputs>
     </file>
@@ -281,7 +281,7 @@
       <inputs>
         <tool>
           <name>XLINK</name>
-          <file> 50 36 48 23 16 18 24 29 44 35</file>
+          <file> 44 33 48 19 16 30 18 24 42 40</file>
         </tool>
       </inputs>
     </file>
@@ -290,16 +290,7 @@
       <outputs>
         <tool>
           <name>XLINK</name>
-          <file> 26</file>
-        </tool>
-      </outputs>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\..\..\..\..\[ROOT_NODE]</name>
-      <outputs>
-        <tool>
-          <name>XLINK</name>
-          <file> 26</file>
+          <file> 17</file>
         </tool>
       </outputs>
     </file>
@@ -308,16 +299,25 @@
       <inputs>
         <tool>
           <name>BILINK</name>
-          <file> 37 25 21 28 32 34 41 19</file>
+          <file> 38 26 29 20 34 28 41 21</file>
         </tool>
       </inputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\..\..\[ROOT_NODE]</name>
+      <outputs>
+        <tool>
+          <name>XLINK</name>
+          <file> 17</file>
+        </tool>
+      </outputs>
     </file>
     <file>
       <name>$PROJ_DIR$\hal\hal_rf.c</name>
       <inputs>
         <tool>
           <name>BICOMP</name>
-          <file> 33 39 27 15 55 53 13 51</file>
+          <file> 32 36 25 5 55 53 4 51</file>
         </tool>
       </inputs>
     </file>
@@ -326,7 +326,7 @@
       <inputs>
         <tool>
           <name>BICOMP</name>
-          <file> 33 39 27 15 55</file>
+          <file> 32 36 25 5 55</file>
         </tool>
       </inputs>
     </file>

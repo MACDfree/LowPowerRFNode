@@ -230,7 +230,8 @@ void wakeUp(void)
   uint16 i;
   //实际测试次数2930/3=977
   //重新测试次数900 时间2015-05-28
-  for(i=0; i<900; i++)
+  //920 时间2015-06-09
+  for(i=0; i<920; i++)
   {
     sendPacket(pak, 4);
   }
@@ -383,7 +384,8 @@ void main(void)
     }
     
     wakeUp();
-    
+    // 发送唤醒数据包，进入状态2
+    status = 2;
 #ifdef MODE_OLED
     halOledShowStr6x8Ex(0, 1, "Send wakeup");
 #endif
@@ -392,15 +394,19 @@ void main(void)
     halUartWrite("Send wakeup\n");
 #endif
     
-    // 发送唤醒数据包，进入状态2
-    status = 2;
+    // 增加延时
+    for(i=0; i<24; i++) // 转换间隔800ms以上，
+    {
+      _delayus(50000);
+    }
+    
     for(i=0; i<4; i++)
     {
       pakAsk[1] = i + ADDR_CJ1;
       sendPacket(pakAsk, 5);
       // 发送节点i+1定向询问数据包，进入状态3
       status++;
-      INIT_TIMER_A(50000); // 传入参数50000表示每50ms进一次中断
+      INIT_TIMER_A(TCOUNT); // 传入参数1000表示每1ms进一次中断
       START_TIMER_A;
       while(1)
       {
@@ -477,7 +483,9 @@ void main(void)
     status = 2;
     LPM3; // msp430进入低功耗模式，程序将在这里停止，等待唤醒数据包
     
-    LED_ON(0);
+    LED_ON(0); // 被唤醒
+    halTemp(pakTemp+5); // 获取温度
+    LED_ON(1); // 温度采集完成
     
 #ifdef MODE_OLED
     halOledShowStr6x8Ex(0, 2, "Wakeup");
@@ -495,7 +503,7 @@ void main(void)
 #endif
     
     status = 3;
-    INIT_TIMER_A(50000); // 传入参数50000表示每50ms进一次中断
+    INIT_TIMER_A(TCOUNT); // 传入参数1000表示每1ms进一次中断
     START_TIMER_A;
     while(1)
     {
@@ -507,15 +515,16 @@ void main(void)
       else if(err==5)
       {
         LED_OFF(0);
+        LED_OFF(1);
         goto loop;
       }
     }
-    LED_ON(1);
+    LED_ON(2); // 收到定向询问包
     status = 4;
-    halTemp(pakTemp+5); // 获取温度
-    LED_ON(2);
+    //halTemp(pakTemp+5); // 获取温度
+    //LED_ON(3);
     sendPacket(pakTemp, 8);
-    LED_ON(3);
+    LED_ON(3); // 温度包发送完成
     
 #ifdef MODE_OLED
     halOledShowStr6x8Ex(0, 5, "send temp finished");
@@ -525,7 +534,7 @@ void main(void)
 #ifdef MODE_UART
     halUartWrite("send temp finished\n");
 #endif
-    
+
     status = 5;
     LED_OFF(0);LED_OFF(1);LED_OFF(2);LED_OFF(3);
   }
